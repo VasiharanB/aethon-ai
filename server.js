@@ -1325,13 +1325,13 @@ app.post("/admin/agent/query", async (req, res) => {
     });
 
     const messages = [
-      { role: "system", content: "You are Aethon Intelligence, an AI data analyst for an assessment platform. The database has tables: users (email, name, college_name, roll_number), assessments (id, title, test_type), student_results (id, student_email, assessment_id, score, percentage, submitted_at), proctoring_logs (id, student_email, assessment_id, log_type). If asked for data, return ONLY a valid SQL query wrapped in ```sql ... ```. If chatting, reply normally. For SQL, only use SELECT." },
+      { role: "system", content: "You are Aethon Intelligence, an AI data analyst for an assessment platform. The database has tables: users (email, name, college_name, roll_number), assessments (id, title, test_type), student_results (id, student_email, assessment_id, score, percentage, submitted_at), proctoring_logs (id, student_email, assessment_id, log_type). Note: log_type contains values like 'tab_switch', 'fullscreen_exit', 'hover_out'. If asked for data, return ONLY a valid SQL query wrapped in ```sql ... ```. If chatting, reply normally. For SQL, only use SELECT." },
       ...history.map(m => ({ role: m.role, content: m.content }))
     ];
 
     const chatCompletion = await groq.chat.completions.create({
       messages: messages,
-      model: "llama3-70b-8192",
+      model: "llama-3.3-70b-versatile",
     });
 
     let aiResponse = chatCompletion.choices[0]?.message?.content || "I couldn't process that.";
@@ -1354,7 +1354,7 @@ app.post("/admin/agent/query", async (req, res) => {
                { role: "system", content: "Convert this JSON data into a clean HTML table using class 'custom-table agent-table'. Return ONLY the HTML code. Do not use markdown backticks." },
                { role: "user", content: JSON.stringify(dbResults).substring(0, 3000) }
              ],
-             model: "llama3-70b-8192"
+             model: "llama-3.3-70b-versatile"
           });
           aiResponse = formatCompletion.choices[0]?.message?.content;
         }
@@ -1372,7 +1372,7 @@ app.post("/admin/agent/query", async (req, res) => {
     res.json({ sessionId: sid, response: aiResponse });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Agent processing failed" });
+    res.status(500).json({ error: error.message || "Agent processing failed" });
   }
 });
 

@@ -113,7 +113,7 @@ async function sendAgentMessage() {
     document.getElementById(loadingId).remove();
     
     if (data.error) {
-      appendMessage("assistant", "Sorry, an error occurred while processing your request.");
+      appendMessage("assistant", `Error: ${data.error}`);
     } else {
       currentAgentSession = data.sessionId;
       appendMessage("assistant", data.response);

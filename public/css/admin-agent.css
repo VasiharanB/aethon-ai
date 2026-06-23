@@ -2,8 +2,8 @@
 .agent-overlay {
   position: fixed;
   top: 0;
-  left: 0;
-  width: 100vw;
+  left: 280px;
+  width: calc(100vw - 280px);
   height: 100vh;
   background: rgba(9, 10, 15, 0.95);
   backdrop-filter: blur(20px);
@@ -423,4 +423,11 @@
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-5px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+  .agent-overlay {
+    left: 0;
+    width: 100vw;
+  }
 }
