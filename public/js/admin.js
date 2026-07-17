@@ -1,20 +1,18 @@
 let currentTestId = null;
 let currentPracticeId = null;
 
-/* =========================
-   TAB SWITCHING LOGIC
-========================= */
+
 function switchTab(tabId, element) {
-  // Update active state in sidebar
+  
   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
   element.classList.add('active');
 
-  // Show correct tab content
+  
   document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
   document.getElementById(tabId).classList.add('active');
 }
 
-// Check URL parameters to open specific tab on load
+
 document.addEventListener("DOMContentLoaded", () => {
   const params = new URLSearchParams(window.location.search);
   const tab = params.get("tab");
@@ -26,9 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-/* =========================
-   GENERATE EMAIL INPUTS
-========================= */
+
 function generateEmailInputs(type) {
   const count = parseInt(document.getElementById(type + "_email_count").value);
   const box = document.getElementById(type + "_emailBox");
@@ -43,9 +39,7 @@ function generateEmailInputs(type) {
   }
 }
 
-/* =========================
-   CREATE ASSESSMENT OR PRACTICE
-========================= */
+
 async function createAssessment(type) {
   const title = document.getElementById(type + "_title").value.trim();
   const msg = document.getElementById(type + "Msg");
@@ -92,7 +86,7 @@ async function createAssessment(type) {
     }
 
   } else {
-    // Practice
+    
     if (!title) {
       msg.style.color = "#ff6b6b";
       msg.innerText = "Title is required";
@@ -120,9 +114,7 @@ async function createAssessment(type) {
   }
 }
 
-/* =========================
-   OPEN SECURITY CONTROLS
-========================= */
+
 function openControls(){
   if(!currentTestId){
     alert("Create Test First");
@@ -132,9 +124,7 @@ function openControls(){
 }
 
 
-/* =========================
-   SAVE JSON QUESTIONS
-========================= */
+
 async function saveJsonQuestions(type) {
   const msg = document.getElementById(type + "_jsonMsg");
   msg.innerText = "";

@@ -26,34 +26,34 @@ async function saveControls(){
       document.getElementById("assessment_id").value,
 
     fullscreen:
-      fullscreen.checked ? 1 : 0,
+      document.getElementById("fullscreen").checked ? 1 : 0,
 
     tab_switch:
-      tab_switch.checked ? 1 : 0,
+      document.getElementById("tab_switch").checked ? 1 : 0,
 
     hover_detection:
-      hover_detection.checked ? 1 : 0,
+      document.getElementById("hover_detection").checked ? 1 : 0,
 
     copy_paste_block:
-      copy_paste_block.checked ? 1 : 0,
+      document.getElementById("copy_paste_block").checked ? 1 : 0,
 
     webcam:
-      webcam.checked ? 1 : 0,
+      document.getElementById("webcam").checked ? 1 : 0,
 
     mic:
-      mic.checked ? 1 : 0,
+      document.getElementById("mic").checked ? 1 : 0,
 
     screen_record:
-      screen_record.checked ? 1 : 0,
+      document.getElementById("screen_record").checked ? 1 : 0,
 
     show_result:
-      show_result.checked ? 1 : 0,
+      document.getElementById("show_result").checked ? 1 : 0,
 
     tab_limit:
-      tab_limit.value || 3,
+      document.getElementById("tab_limit").value || 3,
 
     hover_limit:
-      hover_limit.value || 3,
+      document.getElementById("hover_limit").value || 3,
 
     auto_submit_time: 1,
     auto_submit_tab: 1,

@@ -10,7 +10,7 @@
 </head>
 <body>
 
-  <!-- LEFT SIDEBAR -->
+  
   <aside class="sidebar">
     <div class="sidebar-logo">
       <i class="ri-flashlight-line logo-icon"></i>
@@ -19,7 +19,7 @@
     
     <nav class="sidebar-menu">
       <a href="admin.html" class="menu-item">
-        <i class="ri-dashboard-line"></i> Overview
+        <i class="ri-dashboard-line"></i> Dashboard
       </a>
       <a href="admin-students.html" class="menu-item">
         <i class="ri-group-line"></i> Students
@@ -40,18 +40,21 @@
       <a href="#" class="menu-item" onclick="openAgent(); return false;" style="color: #c084fc;">
         <i class="ri-sparkling-fill" style="color: #c084fc;"></i> Aethon Intelligence
       </a>
+      <a href="admin-prompts.html" class="menu-item" style="color: #c084fc;">
+        <i class="ri-book-read-line" style="color: #c084fc;"></i> Prompt Library
+      </a>
       
     </nav>
     
     <div class="sidebar-profile">
-      <!-- Injected by admin-common.js -->
+      
     </div>
   </aside>
 
-  <!-- MAIN VIEWPORT -->
+  
   <div class="main-content">
     
-    <!-- TOP HEADER -->
+    
     <header class="top-header">
       <div class="breadcrumb">
         <span>Global Environment</span>
@@ -60,10 +63,6 @@
       </div>
       
       <div class="header-actions">
-        <div class="pill-toggle">
-          <a href="dashboard.html" class="toggle-btn">Student View</a>
-          <a href="assessment.html" class="toggle-btn">Assessment IDE</a>
-        </div>
         
         <div class="header-search">
           <i class="ri-search-line"></i>
@@ -76,7 +75,7 @@
       </div>
     </header>
 
-    <!-- CONTENT CONTAINER -->
+    
     <div class="page-container">
       
       <div class="page-title-block">
@@ -84,7 +83,7 @@
         <p class="page-subtitle">Real-time proctoring grid for active assessments.</p>
       </div>
 
-      <!-- FILTER AND BADGE HEADER BAR -->
+      
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
         <div class="live-badge-row">
           <span class="badge active" style="font-size: 13px; padding: 6px 12px;">
@@ -102,9 +101,9 @@
         </button>
       </div>
 
-      <!-- ACTIVE STUDENT GRID -->
+      
       <div class="monitoring-grid" id="monitoring-grid">
-        <!-- Rendered by admin-monitoring.js -->
+        
         <div style="text-align: center; color: var(--gray-text); padding: 80px 0; grid-column: 1 / -1;">Initializing live stream connections...</div>
       </div>
 
@@ -114,7 +113,7 @@
   <script src="js/admin-common.js"></script>
   <script src="js/admin-monitoring.js"></script>
 
-  <!-- AETHON INTELLIGENCE FULLSCREEN OVERLAY -->
+  
   <div id="agent-overlay" class="agent-overlay">
     <div class="agent-sidebar">
       <div class="sidebar-header">
@@ -122,7 +121,7 @@
         <button onclick="newChat()"><i class="ri-add-line"></i></button>
       </div>
       <div id="agent-history-list" class="history-list">
-        <!-- Sessions load here -->
+        
       </div>
     </div>
     
@@ -140,7 +139,7 @@
       </div>
 
       <div id="agent-chat-container" class="agent-chat-container">
-        <!-- Default State -->
+        
         <div id="agent-welcome" class="agent-welcome">
           <div class="big-orb"></div>
           <h2>How can I help you today?</h2>
@@ -161,21 +160,6 @@
             <button onclick="sendSuggested('Identify students at academic risk')">Identify students at academic risk</button>
           </div>
 
-          <button class="manual-toggle-btn" onclick="document.getElementById('prompt-manual').classList.toggle('show')">
-            <i class="ri-book-read-line"></i> View Prompt Manual for Beginners
-          </button>
-          
-          <div id="prompt-manual" class="prompt-manual">
-            <h4><i class="ri-lightbulb-flash-line"></i> How to talk to Aethon Intelligence</h4>
-            <p>You can ask Aethon to fetch, filter, and analyze any data from the platform. Try formats like these:</p>
-            <ul>
-              <li><strong>Counting:</strong> "How many students are registered?" or "How many assessments do we have?"</li>
-              <li><strong>Filtering:</strong> "List all students from [College Name]."</li>
-              <li><strong>Scoring:</strong> "Show me the top 10 students with the highest average scores."</li>
-              <li><strong>Security:</strong> "Find all students who have a 'Critical' severity proctoring violation."</li>
-              <li><strong>Specifics:</strong> "What is the average score for the assessment titled [Assessment Name]?"</li>
-            </ul>
-          </div>
         </div>
 
         <div id="agent-messages" class="agent-messages" style="display:none;"></div>

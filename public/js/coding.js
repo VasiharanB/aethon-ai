@@ -19,9 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  /* ==========================
-     LOAD DATA
-  ========================== */
+  
   async function loadAssessments() {
     try {
       const pRes = await fetch(`/student-practices/${encodeURIComponent(userEmail)}`);
@@ -33,11 +31,11 @@ document.addEventListener("DOMContentLoaded", () => {
         marks: null,
         questions: null,
         description: "Coding Practice",
-        start_time: item.created_at, // use created_at as it's always open
-        end_time: "2099-12-31T23:59:59", // always open
+        start_time: item.created_at, 
+        end_time: "2099-12-31T23:59:59", 
         total_time: 0,
         submitted: item.submitted || 0,
-        feedback_given: true, // skip feedback logic for practice
+        feedback_given: true, 
         show_result: 1,
         score: 0,
         test_type: 'practice'
@@ -52,9 +50,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  /* ==========================
-     STATUS
-  ========================== */
+  
   function getStatus(a) {
     const now = new Date();
     const start = new Date(a.start_time);
@@ -84,9 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  /* ==========================
-     BUTTONS
-  ========================== */
+  
   function getButtons(a) {
     const status = getStatus(a);
 
@@ -102,16 +96,16 @@ document.addEventListener("DOMContentLoaded", () => {
       return `<button class="btn gray" disabled>Missed</button>`;
     }
 
-    // Completed status
     
-    // Check if it's a practice
+    
+    
     if (a.test_type === "practice") {
       return `
         <button class="btn" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 20px; font-weight: 500; cursor: pointer; width: 100%;" onclick="startTest(${a.id}, 'practice')">Finished - Redo Practice ↺</button>
       `;
     }
 
-    // Normal Test completion
+    
     if (!a.feedback_given) {
       return `
         <button class="btn" style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; background: linear-gradient(135deg, #f97316, #ea580c); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 20px; font-weight: 600; cursor: pointer;" onclick="window.location.href='collect-feedback.html?id=${a.id}'">Give Feedback <i class="ri-arrow-right-line"></i></button>
@@ -131,9 +125,7 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
   }
 
-  /* ==========================
-     CARD
-  ========================== */
+  
   function createCard(a) {
 
     const status = getStatus(a);
@@ -190,9 +182,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let sortOrder = "asc";
   const sortButtons = document.querySelectorAll(".sort button");
 
-  /* ==========================
-     RENDER
-  ========================== */
+  
   function renderCards() {
 
     let filtered = [...assessments];
@@ -220,7 +210,7 @@ document.addEventListener("DOMContentLoaded", () => {
       );
     }
 
-    // Sort
+    
     filtered.sort((a, b) => {
       let comparison = 0;
       if (currentSort === "Due Date") {
@@ -243,9 +233,7 @@ document.addEventListener("DOMContentLoaded", () => {
       filtered.map(createCard).join("");
   }
 
-  /* ==========================
-     EVENTS
-  ========================== */
+  
   if (searchInput) {
     searchInput.addEventListener("input", renderCards);
   }
@@ -301,9 +289,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 
-/* ==========================
-   SHOW DETAILS (FINAL)
-========================== */
+
 async function showDetails(id){
 
   try{
@@ -361,30 +347,26 @@ async function showDetails(id){
   }
 }
 
-/* ==========================
-   CLOSE DETAILS
-========================== */
+
 function closeDetails(){
   document
     .getElementById("detailsModal")
     .classList.remove("show");
 }
 
-/* ==========================
-   START TEST / PRACTICE
-========================== */
+
 function startTest(id, type = 'test') {
   const currentEmail = localStorage.getItem("userEmail") || sessionStorage.getItem("userEmail") || "guest@student.com";
   
   if (type === 'practice') {
     const mainDiv = document.querySelector(".main");
     
-    // Hide all direct children of .main
+    
     Array.from(mainDiv.children).forEach(child => {
       child.style.display = "none";
     });
     
-    // Create iframe
+    
     const iframe = document.createElement("iframe");
     iframe.id = "practiceIframe";
     iframe.src = `http://localhost:5173/practice/${id}?email=${encodeURIComponent(currentEmail)}`;
@@ -395,19 +377,17 @@ function startTest(id, type = 'test') {
     
     mainDiv.appendChild(iframe);
     
-    // Remove padding from main so iframe fits perfectly
+    
     mainDiv.dataset.originalPadding = mainDiv.style.padding;
     mainDiv.style.padding = "0";
     
   } else {
-    // Normal test route through start.html
+    
     window.location.href = "start.html?id=" + id;
   }
 }
 
-/* ==========================
-   IFRAME COMMUNICATION
-========================== */
+
 window.addEventListener("message", (event) => {
   if (event.data && event.data.action === 'close_practice') {
     const iframe = document.getElementById("practiceIframe");
@@ -417,23 +397,23 @@ window.addEventListener("message", (event) => {
     
     const mainDiv = document.querySelector(".main");
     
-    // Restore padding
+    
     if (mainDiv.dataset.originalPadding !== undefined) {
       mainDiv.style.padding = mainDiv.dataset.originalPadding;
     } else {
-      mainDiv.style.padding = ""; // Reset to CSS default
+      mainDiv.style.padding = ""; 
     }
     
-    // Show all direct children of .main again
+    
     Array.from(mainDiv.children).forEach(child => {
       if (child.className === "assessment-cards") {
-        child.style.display = "grid"; // or whatever display it had
+        child.style.display = "grid"; 
       } else {
-        child.style.display = "flex"; // default for header/filters
+        child.style.display = "flex"; 
       }
     });
     
-    // Refresh cards
+    
     loadAssessments();
   }
 });

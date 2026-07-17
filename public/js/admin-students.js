@@ -1,4 +1,4 @@
-// admin-students.js - Manage students directory and modals
+
 
 document.addEventListener("DOMContentLoaded", () => {
   fetchStudentsList();
@@ -22,6 +22,8 @@ function fetchStudentsList() {
       showErrorRow();
     });
 }
+
+let selectedStudent = null;
 
 function renderStudents(students) {
   const tbody = document.querySelector("#students-table tbody");
@@ -55,9 +57,14 @@ function renderStudents(students) {
         <td style="font-weight: 600;">${row.avg_score}</td>
         <td style="color: var(--gray-text);">${row.last_active}</td>
         <td style="text-align: right;">
-          <button class="btn-primary" style="font-size: 11px; padding: 4px 10px; border-radius: 6px;" onclick="openStudentDetailsModal('${rowJson}')">
-            <i class="ri-folder-user-line"></i> Profile
-          </button>
+          <div style="display: flex; gap: 8px; justify-content: flex-end;">
+            <button class="btn-outline" style="font-size: 11px; padding: 4px 10px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;" onclick="openEditStudentModal('${rowJson}')">
+              <i class="ri-edit-line"></i> Edit
+            </button>
+            <button class="btn-primary" style="font-size: 11px; padding: 4px 10px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;" onclick="openStudentDetailsModal('${rowJson}')">
+              <i class="ri-folder-user-line"></i> Profile
+            </button>
+          </div>
         </td>
       </tr>
     `;
@@ -66,6 +73,7 @@ function renderStudents(students) {
 
 function openStudentDetailsModal(rowJson) {
   const student = JSON.parse(decodeURIComponent(rowJson));
+  selectedStudent = student;
   
   document.getElementById("details-avatar").textContent = getInitials(student.name);
   document.getElementById("details-name").textContent = student.name;
@@ -79,6 +87,8 @@ function openStudentDetailsModal(rowJson) {
   document.getElementById("details-dob").textContent = student.dob || "N/A";
   document.getElementById("details-phone").textContent = student.personal_number || "N/A";
   document.getElementById("details-college").textContent = student.college_name || "N/A";
+  document.getElementById("details-joining").textContent = student.joining_year || "N/A";
+  document.getElementById("details-passing").textContent = student.passing_year || "N/A";
   document.getElementById("details-score").textContent = student.avg_score || "0%";
   document.getElementById("details-active").textContent = student.last_active || "Active";
   
@@ -87,6 +97,84 @@ function openStudentDetailsModal(rowJson) {
 
 function closeStudentDetailsModal() {
   document.getElementById("student-details-modal").style.display = "none";
+}
+
+function openEditStudentModal(rowJson) {
+  const student = JSON.parse(decodeURIComponent(rowJson));
+  selectedStudent = student;
+  
+  document.getElementById("edit-student-name").value = student.name || "";
+  document.getElementById("edit-student-email").value = student.email || "";
+  document.getElementById("edit-student-roll").value = (student.student_id && !student.student_id.startsWith("STD-")) ? student.student_id : "";
+  document.getElementById("edit-student-phone").value = student.personal_number !== "N/A" ? student.personal_number : "";
+  document.getElementById("edit-student-dob").value = student.dob !== "N/A" ? student.dob : "";
+  document.getElementById("edit-student-college").value = student.college_name !== "N/A" ? student.college_name : "";
+  document.getElementById("edit-student-joining").value = student.joining_year !== "N/A" ? student.joining_year : "";
+  document.getElementById("edit-student-passing").value = student.passing_year !== "N/A" ? student.passing_year : "";
+  
+  document.getElementById("editStudentMsg").textContent = "";
+  document.getElementById("editStudentMsg").style.color = "";
+  document.getElementById("edit-student-modal").style.display = "flex";
+}
+
+function closeEditStudentModal() {
+  document.getElementById("edit-student-modal").style.display = "none";
+}
+
+function openEditStudentFromDetails() {
+  if (!selectedStudent) return;
+  closeStudentDetailsModal();
+  openEditStudentModal(encodeURIComponent(JSON.stringify(selectedStudent)));
+}
+
+function submitEditStudent() {
+  const nameInput = document.getElementById("edit-student-name");
+  const emailInput = document.getElementById("edit-student-email");
+  const rollInput = document.getElementById("edit-student-roll");
+  const dobInput = document.getElementById("edit-student-dob");
+  const phoneInput = document.getElementById("edit-student-phone");
+  const collegeInput = document.getElementById("edit-student-college");
+  const joiningInput = document.getElementById("edit-student-joining");
+  const passingInput = document.getElementById("edit-student-passing");
+  const msgEl = document.getElementById("editStudentMsg");
+
+  const name = nameInput.value.trim();
+  const email = emailInput.value.trim();
+  const roll_number = rollInput.value.trim();
+  const dob = dobInput.value;
+  const personal_number = phoneInput.value.trim();
+  const college_name = collegeInput.value.trim();
+  const joining_year = joiningInput.value.trim();
+  const passing_year = passingInput.value.trim();
+
+  if (!name || !email) {
+    msgEl.textContent = "Name is required.";
+    msgEl.style.color = "var(--danger)";
+    return;
+  }
+
+  fetch("/admin/edit-student", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, email, dob, roll_number, personal_number, college_name, joining_year, passing_year })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      msgEl.textContent = "Student details updated successfully!";
+      msgEl.style.color = "var(--success)";
+      fetchStudentsList();
+      setTimeout(closeEditStudentModal, 1500);
+    } else {
+      msgEl.textContent = data.error || "Failed to update details.";
+      msgEl.style.color = "var(--danger)";
+    }
+  })
+  .catch(err => {
+    console.error(err);
+    msgEl.textContent = "Server error occurred.";
+    msgEl.style.color = "var(--danger)";
+  });
 }
 
 function searchStudents() {
@@ -107,14 +195,14 @@ function showErrorRow() {
   }
 }
 
-// Modal actions
+
 function openAddStudentModal() {
   document.getElementById("add-student-modal").style.display = "flex";
   document.getElementById("addStudentMsg").textContent = "";
   document.getElementById("addStudentMsg").style.color = "";
 }
 
-// Ensure closing details also works if clicked outside or cancel
+
 function closeAddStudentModal() {
   document.getElementById("add-student-modal").style.display = "none";
 }
@@ -127,6 +215,8 @@ function submitAddStudent() {
   const dobInput = document.getElementById("new-student-dob");
   const phoneInput = document.getElementById("new-student-phone");
   const collegeInput = document.getElementById("new-student-college");
+  const joiningInput = document.getElementById("new-student-joining");
+  const passingInput = document.getElementById("new-student-passing");
   const msgEl = document.getElementById("addStudentMsg");
 
   const name = nameInput.value.trim();
@@ -136,6 +226,8 @@ function submitAddStudent() {
   const dob = dobInput.value;
   const personal_number = phoneInput.value.trim();
   const college_name = collegeInput.value.trim();
+  const joining_year = joiningInput.value.trim();
+  const passing_year = passingInput.value.trim();
 
   if (!name || !email || !password) {
     msgEl.textContent = "Name, Email and Temp Password are required.";
@@ -146,7 +238,7 @@ function submitAddStudent() {
   fetch("/admin/add-student", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, email, password, dob, roll_number, personal_number, college_name })
+    body: JSON.stringify({ name, email, password, dob, roll_number, personal_number, college_name, joining_year, passing_year })
   })
   .then(res => res.json())
   .then(data => {
@@ -154,7 +246,6 @@ function submitAddStudent() {
       msgEl.textContent = "Student account created successfully!";
       msgEl.style.color = "var(--success)";
       
-      // Clear inputs
       nameInput.value = "";
       emailInput.value = "";
       passwordInput.value = "";
@@ -162,8 +253,9 @@ function submitAddStudent() {
       dobInput.value = "";
       phoneInput.value = "";
       collegeInput.value = "";
+      joiningInput.value = "";
+      passingInput.value = "";
       
-      // Refresh list
       fetchStudentsList();
       setTimeout(closeAddStudentModal, 1500);
     } else {

@@ -173,6 +173,7 @@
   box-shadow: 0 0 30px rgba(168, 85, 247, 0.6);
   margin-bottom: 20px;
 }
+
 .agent-welcome h2 {
   font-size: 28px;
   background: linear-gradient(90deg, #c084fc, #60a5fa);
@@ -407,7 +408,8 @@
   gap: 12px;
 }
 .prompt-manual li {
-  font-size: 13px;
+
+font-size: 13px;
   color: #d4d4d8;
   padding-left: 15px;
   position: relative;

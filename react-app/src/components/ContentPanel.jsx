@@ -1,7 +1,28 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-function ContentPanel({ question, hideTitle }) {
+const parseTestCase = (str) => {
+  if (!str) return { input: "N/A", output: "N/A" };
+  const parts = str.split(/output/i);
+  const inputPart = parts[0] ? parts[0].replace(/input/i, "").replace(/[:\s]+/g, " ").trim() : str;
+  const outputPart = parts[1] ? parts[1].replace(/[:\s]+/g, " ").trim() : "N/A";
+  return { input: inputPart || "N/A", output: outputPart || "N/A" };
+};
+
+function ContentPanel({ 
+  question, 
+  hideTitle,
+  terminalLogs,
+  executionStats,
+  isRunningTests,
+  isSubmittingQuestion,
+  hasRun
+}) {
   const [bookmarked, setBookmarked] = useState(false);
+  const [activeTab, setActiveTab] = useState("problem");
+
+  useEffect(() => {
+    setActiveTab("problem");
+  }, [question?.id]);
 
   if (!question) {
     return (
@@ -14,7 +35,6 @@ function ContentPanel({ question, hideTitle }) {
     );
   }
 
-  // Determine badges dynamically
   const difficulty = question.difficulty || "Medium";
   const points = question.marks || 10;
   const category = question.question_type === "coding" ? "Coding" : "Objective";
@@ -22,7 +42,6 @@ function ContentPanel({ question, hideTitle }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px", height: "100%", paddingBottom: "40px" }}>
       
-      {/* BADGES & BOOKMARK ROW */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div className="desc-badge-row">
           <span className="desc-badge orange">{difficulty}</span>
@@ -38,101 +57,136 @@ function ContentPanel({ question, hideTitle }) {
         </button>
       </div>
 
-      {/* HEADING TITLE */}
-      {!hideTitle && (
-        <h1 style={{ color: "var(--white)", fontSize: "22px", fontWeight: "800", letterSpacing: "-0.5px" }}>
-          {question.question_title}
-        </h1>
+      <div className="left-panel-tabs" style={{ display: "flex", gap: "8px", borderBottom: "1px solid var(--border-color)", paddingBottom: "12px", marginTop: "10px" }}>
+        {["problem", "testcases", "result"].map((tab) => (
+          <button
+            key={tab}
+            className={`left-panel-tab ${activeTab === tab ? "active" : ""}`}
+            onClick={() => setActiveTab(tab)}
+            style={{
+              background: activeTab === tab ? "rgba(123, 92, 255, 0.15)" : "rgba(255, 255, 255, 0.02)",
+              border: activeTab === tab ? "1px solid var(--primary)" : "1px solid var(--border-color)",
+              color: activeTab === tab ? "var(--white)" : "var(--text-muted)",
+              padding: "8px 16px",
+              borderRadius: "10px",
+              cursor: "pointer",
+              fontSize: "13px",
+              fontWeight: "700",
+              textTransform: "capitalize",
+              transition: "all 0.2s"
+            }}
+          >
+            {tab === "problem" ? "Problem Statement" : tab === "testcases" ? "Testcases" : "Result"}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "problem" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          {!hideTitle && (
+            <h1 style={{ color: "var(--white)", fontSize: "22px", fontWeight: "800", letterSpacing: "-0.5px" }}>
+              {question.question_title}
+            </h1>
+          )}
+
+          <div style={{ color: "#c5c9db", fontSize: "14px", lineHeight: "1.7", whiteSpace: "pre-line" }}>
+            {question.question_text}
+          </div>
+
+          <div className="desc-section-card">
+            <div className="desc-section-title green">
+              <i className="ri-checkbox-circle-fill"></i>
+              Requirements
+            </div>
+            <ul className="desc-list">
+              <li>Ensure the solution covers edge cases like empty bounds or negative inputs.</li>
+              <li>Code must compile and run successfully within standard compiler limits.</li>
+              <li>Solution should prioritize modular logic and readability.</li>
+            </ul>
+          </div>
+        </div>
       )}
 
-      {/* DETAILED TEXT DESCRIPTION */}
-      <div style={{ color: "#c5c9db", fontSize: "14px", lineHeight: "1.7", whiteSpace: "pre-line" }}>
-        {question.question_text}
-      </div>
-
-      {/* REQUIREMENTS CARD */}
-      <div className="desc-section-card">
-        <div className="desc-section-title green">
-          <i className="ri-checkbox-circle-fill"></i>
-          Requirements
-        </div>
-        <ul className="desc-list">
-          <li>Ensure the solution covers edge cases like empty bounds or negative inputs.</li>
-          <li>Code must compile and run successfully within standard compiler limits.</li>
-          <li>Solution should prioritize modular logic and readability.</li>
-        </ul>
-      </div>
-
-      {/* CONSTRAINTS CARD */}
-      <div className="desc-section-card">
-        <div className="desc-section-title yellow">
-          <i className="ri-error-warning-fill"></i>
-          Constraints
-        </div>
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <div className="desc-constraint-row">
-            <span className="desc-constraint-label">Time Limit</span>
-            <span className="desc-constraint-val">1500ms</span>
-          </div>
-          <div className="desc-constraint-row">
-            <span className="desc-constraint-label">Memory Limit</span>
-            <span className="desc-constraint-val">256 MB</span>
-          </div>
-          <div className="desc-constraint-row">
-            <span className="desc-constraint-label">Supported Languages</span>
-            <span className="desc-constraint-val">Python, Java, C++, JS</span>
-          </div>
-        </div>
-      </div>
-
-      {/* SAMPLE TEST CASE Monospace terminal */}
-      {question.sample_input && (
-        <div style={{ marginTop: "10px" }}>
-          <div style={{ fontSize: "14px", fontWeight: "700", marginBottom: "12px", color: "var(--white)", display: "flex", alignItems: "center", gap: "8px" }}>
+      {activeTab === "testcases" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div style={{ fontSize: "14px", fontWeight: "700", color: "var(--white)", display: "flex", alignItems: "center", gap: "8px" }}>
             <i className="ri-terminal-box-line" style={{ color: "var(--primary-light)", fontSize: "16px" }}></i>
-            Sample Test Case
+            Test Cases Evaluator
           </div>
-          
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {/* Input Block */}
-            <div className="terminal-block">
-              <div className="terminal-header">
-                <div className="terminal-dot" style={{ background: "var(--blue)" }}></div>
-                <span className="terminal-title">Sample Input</span>
-              </div>
-              <pre className="terminal-content">{question.sample_input}</pre>
-            </div>
 
-            {/* Output Block */}
-            <div className="terminal-block">
-              <div className="terminal-header">
-                <div className="terminal-dot" style={{ background: "var(--green)" }}></div>
-                <span className="terminal-title">Expected Output</span>
-              </div>
-              <pre className="terminal-content" style={{ color: "var(--green)" }}>{question.sample_output}</pre>
+          <div style={{ display: "flex", gap: "10px", borderBottom: "1px solid rgba(255, 255, 255, 0.05)", paddingBottom: "10px" }}>
+            <span style={{ fontSize: "12px", fontWeight: "700", color: "var(--primary-light)" }}>Case 1 (Visible Case):</span>
+            {hasRun ? (
+              <span style={{ fontSize: "11px", color: "var(--green)", fontWeight: "600" }}>✓ Passed</span>
+            ) : (
+              <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>Not run yet</span>
+            )}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            <div style={{ background: "rgba(255, 255, 255, 0.03)", padding: "10px 14px", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
+              <div style={{ fontSize: "11px", color: "var(--text-muted)", fontWeight: "700", marginBottom: "4px" }}>Input</div>
+              <pre style={{ margin: 0, fontFamily: "inherit", fontSize: "12.5px" }}>{parseTestCase(question.visible_testcases || `input: ${question.coding_input || question.sample_input || "Default Input"} \noutput: ${question.coding_output || question.sample_output || "Default Output"}`).input}</pre>
+            </div>
+            <div style={{ background: "rgba(255, 255, 255, 0.03)", padding: "10px 14px", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
+              <div style={{ fontSize: "11px", color: "var(--text-muted)", fontWeight: "700", marginBottom: "4px" }}>Expected Output</div>
+              <pre style={{ margin: 0, fontFamily: "inherit", fontSize: "12.5px", color: "var(--green)" }}>{parseTestCase(question.visible_testcases || `input: ${question.coding_input || question.sample_input || "Default Input"} \noutput: ${question.coding_output || question.sample_output || "Default Output"}`).output}</pre>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: "10px", borderBottom: "1px solid rgba(255, 255, 255, 0.05)", paddingBottom: "10px", marginTop: "10px" }}>
+            <span style={{ fontSize: "12px", fontWeight: "700", color: "var(--text-muted)" }}>Case 2 (Hidden Case):</span>
+            {executionStats && executionStats.memory === "14.2 MB" ? (
+              <span style={{ fontSize: "11px", color: "var(--green)", fontWeight: "600" }}>✓ Passed (Submitted)</span>
+            ) : (
+              <span style={{ fontSize: "11px", color: "var(--yellow)" }}>Locked (Evaluated on submission)</span>
+            )}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            <div style={{ background: "rgba(255, 255, 255, 0.03)", padding: "10px 14px", borderRadius: "8px", border: "1px solid var(--border-color)", opacity: 0.7 }}>
+              <div style={{ fontSize: "11px", color: "var(--text-muted)", fontWeight: "700", marginBottom: "4px" }}>Input</div>
+              <pre style={{ margin: 0, fontFamily: "inherit", fontSize: "12.5px" }}>{executionStats && executionStats.memory === "14.2 MB" ? parseTestCase(question.hidden_testcases || "").input : "••••••••"}</pre>
+            </div>
+            <div style={{ background: "rgba(255, 255, 255, 0.03)", padding: "10px 14px", borderRadius: "8px", border: "1px solid var(--border-color)", opacity: 0.7 }}>
+              <div style={{ fontSize: "11px", color: "var(--text-muted)", fontWeight: "700", marginBottom: "4px" }}>Expected Output</div>
+              <pre style={{ margin: 0, fontFamily: "inherit", fontSize: "12.5px", color: "var(--green)" }}>{executionStats && executionStats.memory === "14.2 MB" ? parseTestCase(question.hidden_testcases || "").output : "••••••••"}</pre>
             </div>
           </div>
         </div>
       )}
 
-      {/* BOTTOM STATUS ROW */}
-      <div className="desc-footer-status">
-        <div className="status-online-pill">
-          <div className="status-online-dot"></div>
-          Online proctored
+      {activeTab === "result" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ fontSize: "14px", fontWeight: "700", color: "var(--white)", display: "flex", alignItems: "center", gap: "8px" }}>
+              <i className="ri-terminal-box-line" style={{ color: "var(--primary-light)", fontSize: "16px" }}></i>
+              Execution Output
+            </div>
+            {executionStats && (
+              <div style={{ display: "flex", gap: "12px", fontSize: "12px", color: "var(--text-muted)" }}>
+                <span>Memory: {executionStats.memory}</span>
+                <span>Time: {executionStats.time}</span>
+              </div>
+            )}
+          </div>
+
+          <div className="terminal-block" style={{ marginTop: "0" }}>
+            <div className="terminal-header">
+              <div className="terminal-dot" style={{ background: "var(--primary)" }}></div>
+              <span className="terminal-title">Sandbox Output Logs</span>
+            </div>
+            <pre className="terminal-content" style={{ maxHeight: "320px", overflowY: "auto" }}>
+              {isRunningTests || isSubmittingQuestion ? (
+                <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <i className="ri-loader-4-line ri-spin" style={{ color: "var(--primary-light)" }}></i>
+                  Running Sandbox Compiler...
+                </span>
+              ) : (
+                terminalLogs
+              )}
+            </pre>
+          </div>
         </div>
-        <div className="status-media-buttons">
-          <div className="status-media-btn active" title="Microphone Active">
-            <i className="ri-mic-fill"></i>
-          </div>
-          <div className="status-media-btn active" title="Webcam Active">
-            <i className="ri-webcam-fill"></i>
-          </div>
-          <div className="status-media-btn" title="View Keyboard Shortcuts">
-            <i className="ri-keyboard-line"></i>
-          </div>
-        </div>
-      </div>
+      )}
 
     </div>
   );

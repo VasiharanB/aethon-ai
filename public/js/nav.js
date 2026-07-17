@@ -1,10 +1,8 @@
-/* =========================
-   nav.js (FINAL)
-========================= */
+
 
 document.addEventListener("DOMContentLoaded", () => {
 
-  /* ================= USER DETAILS ================= */
+  
 
   const name =
     localStorage.getItem("userName");
@@ -21,7 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const userRole =
     document.getElementById("userRole");
 
-  /* show only if exists */
+  
   if(name){
 
     if(userName)
@@ -43,7 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
 
-  /* ================= MENU NAV ================= */
+  
 
   const menuItems =
     document.querySelectorAll(".menu-item");
@@ -78,7 +76,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
-/* ================= LOGOUT ================= */
+
 
 function logout(){
 
@@ -89,7 +87,7 @@ function logout(){
 
 }
 
-/* ================= SIDEBAR TOGGLE ================= */
+
 
 function toggleSidebar() {
   document.getElementById("sidebar").classList.toggle("collapsed");

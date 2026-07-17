@@ -1,6 +1,4 @@
-/* =========================
-   auth.js (FINAL - WORKING)
-========================= */
+
 
 async function login(){
 
@@ -19,6 +17,9 @@ async function login(){
     msg.innerText = "Enter email and password";
     return;
   }
+  
+  const urlParams = new URLSearchParams(window.location.search);
+  const requestedRole = urlParams.get('role') || 'student';
 
   try{
 
@@ -29,7 +30,8 @@ async function login(){
       },
       body: JSON.stringify({
         email,
-        password
+        password,
+        role: requestedRole
       })
     });
 
@@ -37,25 +39,21 @@ async function login(){
 
     if(data.success){
 
-      /* =========================
-         CLEAR OLD DATA
-      ========================== */
+      
       localStorage.clear();
       sessionStorage.clear();
 
-      /* =========================
-         NAME GENERATION FROM EMAIL
-      ========================== */
+      
       let name = data.name;
 
       if(!name){
 
         const username = data.email.split("@")[0];
 
-        // remove numbers
+        
         const clean = username.replace(/[0-9]/g, '');
 
-        // extract words
+        
         const words = clean.match(/[a-z]+/gi);
 
         if(words){
@@ -67,16 +65,12 @@ async function login(){
         }
       }
 
-      /* =========================
-         STORE SESSION DATA
-      ========================== */
+      
       localStorage.setItem("userName", name);
       localStorage.setItem("userEmail", data.email);
       localStorage.setItem("role", data.role);
 
-      /* =========================
-         REDIRECT BASED ON ROLE
-      ========================== */
+      
       if(data.role === "admin"){
         window.location.href = "admin.html";
       }else{
@@ -94,9 +88,7 @@ async function login(){
 
 }
 
-/* =========================
-   FORGOT PASSWORD FLOW
-========================= */
+
 
 function showForgot() {
   document.getElementById('login-section').style.display = 'none';

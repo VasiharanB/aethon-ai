@@ -1,4 +1,4 @@
-// admin-assessments.js - Handles assessments listings, creation, uploaders, and editing
+
 
 let currentTestId = null;
 let currentPracticeId = null;
@@ -7,7 +7,7 @@ let cachedAssessments = [];
 document.addEventListener("DOMContentLoaded", () => {
   fetchAssessmentsList();
   
-  // Prefill datetime fields with default upcoming values
+  
   const now = new Date();
   const tomorrow = new Date(now.getTime() + (24 * 60 * 60 * 1000));
   
@@ -17,9 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (endEl) endEl.value = formatDateForInput(tomorrow);
 });
 
-/* =========================
-   SUB PANEL SWITCHING
-========================= */
+
 function switchSubPanel(panelId, tabElement) {
   document.querySelectorAll(".sub-nav-tab").forEach(tab => tab.classList.remove("active"));
   tabElement.classList.add("active");
@@ -28,9 +26,7 @@ function switchSubPanel(panelId, tabElement) {
   document.getElementById(panelId).classList.add("active");
 }
 
-/* =========================
-   FETCH & RENDER ASSESSMENTS
-========================= */
+
 function fetchAssessmentsList() {
   fetch("/admin/assessments-list")
     .then(res => res.json())
@@ -63,7 +59,7 @@ function renderAssessments(items) {
     if (row.status === "DRAFT") badgeClass = "badge draft";
     if (row.status === "COMPLETED") badgeClass = "badge completed";
     
-    // Map details to pass into edit trigger
+    
     const rowJson = encodeURIComponent(JSON.stringify(row));
     
     return `
@@ -119,9 +115,7 @@ function showErrorRow() {
   }
 }
 
-/* =========================
-   GENERATE EMAIL INPUTS (Preserved)
-========================= */
+
 function generateEmailInputs(type) {
   const count = parseInt(document.getElementById(type + "_email_count").value);
   const box = document.getElementById(type + "_emailBox");
@@ -136,9 +130,7 @@ function generateEmailInputs(type) {
   }
 }
 
-/* =========================
-   CREATE STRICT TEST / PRACTICE (Preserved)
-========================= */
+
 async function createAssessment(type) {
   const title = document.getElementById(type + "_title").value.trim();
   const msg = document.getElementById(type + "Msg");
@@ -177,7 +169,7 @@ async function createAssessment(type) {
         msg.style.color = "var(--success)";
         msg.innerText = "Test Created Successfully. You can now upload questions below.";
         
-        // Refresh list
+        
         fetchAssessmentsList();
       } else {
         msg.style.color = "var(--danger)";
@@ -188,7 +180,7 @@ async function createAssessment(type) {
     }
 
   } else {
-    // Practice
+    
     if (!title) {
       msg.style.color = "var(--danger)";
       msg.innerText = "Title is required";
@@ -207,7 +199,7 @@ async function createAssessment(type) {
         msg.style.color = "var(--success)";
         msg.innerText = "Practice Created Successfully. You can now upload questions below.";
         
-        // Refresh list
+        
         fetchAssessmentsList();
       } else {
         msg.style.color = "var(--danger)";
@@ -219,9 +211,7 @@ async function createAssessment(type) {
   }
 }
 
-/* =========================
-   SAVE JSON QUESTIONS (Preserved)
-========================= */
+
 async function saveJsonQuestions(type) {
   const msg = document.getElementById(type + "_jsonMsg");
   msg.innerText = "";
@@ -295,9 +285,7 @@ function openControlsFor(id, testType) {
   window.open("control.html?id=" + id, "_blank");
 }
 
-/* =========================
-   EDIT ASSESSMENT MODAL LOGIC
-========================= */
+
 function openEditModal(rowJson) {
   const row = JSON.parse(decodeURIComponent(rowJson));
   
@@ -312,7 +300,7 @@ function openEditModal(rowJson) {
   const durationGroup = document.getElementById("edit-duration-group");
   
   if (row.test_type === "practice_table") {
-    // Hide test specific fields for practices
+    
     descGroup.style.display = "none";
     startGroup.style.display = "none";
     endGroup.style.display = "none";
@@ -324,19 +312,23 @@ function openEditModal(rowJson) {
     durationGroup.style.display = "flex";
     
     document.getElementById("edit-description").value = row.description || "";
-    // Clean durations from " min" suffix
+    
     document.getElementById("edit-duration").value = parseInt(row.duration) || 60;
     
-    // Fetch test record dates from the database or handle mapping
-    // To get exact formatted datetime-local strings:
-    const targetObj = cachedAssessments.find(a => a.id === row.id && a.test_type === row.test_type);
-    if (targetObj) {
-      // Find start/end times from database row (handled on list render)
-      fetchAssessmentDetailsAndPrepopulate(row.id);
+    if (row.start_time) {
+      document.getElementById("edit-start").value = formatDateForInput(new Date(row.start_time));
+    } else {
+      document.getElementById("edit-start").value = "";
+    }
+    
+    if (row.end_time) {
+      document.getElementById("edit-end").value = formatDateForInput(new Date(row.end_time));
+    } else {
+      document.getElementById("edit-end").value = "";
     }
   }
 
-  // Fetch candidate emails on-demand
+  
   fetch(`/admin/assessment-emails?id=${row.id}&type=${row.test_type}`)
     .then(res => res.json())
     .then(data => {
@@ -347,11 +339,11 @@ function openEditModal(rowJson) {
 }
 
 function fetchAssessmentDetailsAndPrepopulate(id) {
-  // Pre-populate standard datetime strings
-  // We can query the main list data if cached, or parse from list
+  
+  
   const match = cachedAssessments.find(a => a.id === id);
-  // We fetch details or parse from database. For simplicity:
-  // Let's use a quick request if needed, or parse existing
+  
+  
 }
 
 function closeEditModal() {
@@ -388,7 +380,7 @@ function submitEditAssessment() {
       msgEl.textContent = "Changes saved successfully!";
       msgEl.style.color = "var(--success)";
       
-      // Refresh list
+      
       fetchAssessmentsList();
       setTimeout(closeEditModal, 1200);
     } else {
@@ -424,7 +416,7 @@ function triggerDeleteAssessment() {
       msgEl.textContent = "Assessment deleted successfully!";
       msgEl.style.color = "var(--success)";
       
-      // Refresh list
+      
       fetchAssessmentsList();
       setTimeout(closeEditModal, 1200);
     } else {
@@ -439,9 +431,7 @@ function triggerDeleteAssessment() {
   });
 }
 
-/* =========================
-   DATE FORMAT HELPERS
-========================= */
+
 function formatDateForInput(date) {
   const pad = (num) => String(num).padStart(2, '0');
   const yyyy = date.getFullYear();

@@ -13,15 +13,13 @@ document.addEventListener("DOMContentLoaded", () => {
   let donutChart;
   let lineChart;
 
-  /* =========================
-     LOAD DASHBOARD DATA
-  ========================= */
+  
   async function loadDashboard() {
 
     try {
 
       const res = await fetch(
-        `http://localhost:3000/student-assessments?email=${encodeURIComponent(userEmail)}`
+        `/student-assessments?email=${encodeURIComponent(userEmail)}`
       );
 
       const rows = await res.json();
@@ -105,9 +103,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  /* =========================
-     ACTIVITY LIST
-  ========================= */
+  
   function populateActivity(rows) {
     const list = document.getElementById("activityList");
     if (!list) return;
@@ -119,33 +115,56 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // Sort by most recently assigned/due
+    
     const sorted = [...rows].sort((a, b) => new Date(b.due_date) - new Date(a.due_date));
     
-    // Take top 4
+    
     const recent = sorted.slice(0, 4);
 
     recent.forEach(item => {
       const isSubmitted = item.submitted == 1;
-      const statusColor = isSubmitted ? "#10b981" : "#8b5cf6";
-      const statusText = isSubmitted ? "Completed" : "Assigned";
+      const isAuto = item.auto_submitted == 1;
+      
+      let statusText = "";
+      let statusColor = "";
+      let activityDesc = "";
+      
+      if (isSubmitted) {
+        if (isAuto) {
+          statusText = "Auto Submitted";
+          statusColor = "#fbbf24"; 
+          activityDesc = "Test completed automatically due to timeout or tab/proctoring limit.";
+        } else {
+          statusText = "Submitted";
+          statusColor = "#10b981"; 
+          activityDesc = "Test completed and submitted successfully.";
+        }
+      } else {
+        statusText = "Created";
+        statusColor = "#60a5fa"; 
+        activityDesc = "New assessment assigned and ready to start.";
+      }
       
       const div = document.createElement("div");
       div.className = "activity-item";
+      div.style.padding = "14px";
+      div.style.marginBottom = "8px";
       div.innerHTML = `
-        <div class="top-row">
-          <h4>${item.title || "Assessment"}</h4>
-          <span style="color: ${statusColor}; font-weight: 600;">${statusText}</span>
+        <div class="top-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <h4 style="font-weight: 600; font-size: 14px; margin: 0; color: #ffffff;">${item.title || "Assessment"}</h4>
+          <span style="color: ${statusColor}; font-weight: 700; font-size: 10px; padding: 3px 8px; background: ${statusColor}15; border-radius: 12px; border: 1px solid ${statusColor}30; text-transform: uppercase; letter-spacing: 0.5px;">${statusText}</span>
         </div>
-        <span>Due: ${new Date(item.due_date).toLocaleDateString()}</span>
+        <p style="font-size: 12px; color: rgba(255, 255, 255, 0.5); margin: 0 0 8px 0; line-height: 1.4;">${activityDesc}</p>
+        <span style="font-size: 11px; color: rgba(255, 255, 255, 0.35); display: flex; align-items: center; gap: 5px;">
+          <i class="ri-calendar-line" style="font-size: 12px;"></i>
+          Due: ${new Date(item.due_date).toLocaleDateString("en-IN", { day: '2-digit', month: 'short', year: 'numeric' })}
+        </span>
       `;
       list.appendChild(div);
     });
   }
 
-  /* =========================
-     UPDATE TOP CARDS
-  ========================= */
+  
   function updateCards(data) {
 
     document.getElementById("total").innerText =
@@ -175,9 +194,7 @@ document.addEventListener("DOMContentLoaded", () => {
       data.avgScore + "%";
   }
 
-  /* =========================
-     BAR CHART
-  ========================= */
+  
   function createBarChart(rows) {
 
     const months = {};
@@ -306,9 +323,7 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   }
 
-  /* =========================
-     DONUT CHART
-  ========================= */
+  
   function createDonutChart(
     completed,
     missed,
@@ -385,9 +400,7 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   }
 
-  /* =========================
-     LINE CHART (Score Trend)
-  ========================= */
+  
   function createLineChart(rows) {
 
     const labels =
@@ -469,10 +482,8 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   }
 
-  /* =========================
-     START
-  ========================= */
+  
   loadDashboard();
 
 });
-
+

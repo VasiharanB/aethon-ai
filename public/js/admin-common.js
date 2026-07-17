@@ -1,6 +1,6 @@
-// admin-common.js - Shared script for all Aethon Admin Panel pages
 
-// Session / Authentication Security Protocol
+
+
 (() => {
   const role = localStorage.getItem("role");
   const email = localStorage.getItem("userEmail");
@@ -10,7 +10,7 @@
 })();
 
 document.addEventListener("DOMContentLoaded", () => {
-  // 1. Set current profile details
+  
   const profileWidget = document.querySelector(".sidebar-profile");
   if (profileWidget) {
     const name = localStorage.getItem("userName") || "M. Shameem";
@@ -31,7 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
   }
 
-  // 2. Global search handler
+  
   const searchInput = document.querySelector(".header-search input");
   if (searchInput) {
     searchInput.addEventListener("keypress", (e) => {
@@ -39,7 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const query = searchInput.value.trim();
         if (query) {
           console.log(`Global search initiated for: ${query}`);
-          // Redirect or filter based on current page
+          
           if (window.location.pathname.includes("admin-students.html")) {
             filterStudentsTable(query);
           } else if (window.location.pathname.includes("admin-assessments.html")) {
@@ -52,7 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 3. Notification bell handler
+  
   const bellBtn = document.querySelector(".bell-btn");
   if (bellBtn) {
     bellBtn.addEventListener("click", () => {
@@ -61,7 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-// Helper filters to be overridden by individual pages if loaded
+
 function filterStudentsTable(query) {
   const rows = document.querySelectorAll(".custom-table tbody tr");
   rows.forEach(row => {

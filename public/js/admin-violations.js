@@ -1,4 +1,4 @@
-// admin-violations.js - Handle proctoring violations database and review workflow
+
 
 let cachedViolations = [];
 
@@ -34,7 +34,7 @@ function renderViolations(items) {
   }
 
   tbody.innerHTML = items.map(row => {
-    let severityClass = "badge active"; // low
+    let severityClass = "badge active"; 
     if (row.severity === "HIGH") {
       severityClass = "badge flagged";
     } else if (row.severity === "CRITICAL") {
@@ -43,7 +43,7 @@ function renderViolations(items) {
 
     const rowJson = encodeURIComponent(JSON.stringify(row));
     
-    // Status button or resolved tag
+    
     let statusActionHtml = `<span class="badge inactive">Resolved</span>`;
     if (row.status === "Review") {
       statusActionHtml = `
@@ -103,7 +103,7 @@ function showErrorRow() {
   }
 }
 
-// Modal Review actions
+
 function openReviewModal(rowJson) {
   const row = JSON.parse(decodeURIComponent(rowJson));
   
@@ -123,7 +123,7 @@ function openReviewModal(rowJson) {
   
   const videoWrapper = document.getElementById("video-wrapper");
   if (row.file_path) {
-    // Render HTML5 Video player for webcam footage
+    
     videoWrapper.innerHTML = `
       <video src="${row.file_path}" controls autoplay style="width: 100%; border-radius: 12px; border: 1px solid var(--border-color); background-color: #000; max-height: 240px;"></video>
     `;
@@ -160,11 +160,11 @@ function startViolationSimulation(eventType) {
 
   function animate() {
     step += 1;
-    if (!document.getElementById("violation-simulator-canvas")) return; // modal closed
+    if (!document.getElementById("violation-simulator-canvas")) return; 
 
     ctx.clearRect(0, 0, w, h);
 
-    // 1. Dark futuristic backdrop + scan line grid
+    
     ctx.fillStyle = "#09090e";
     ctx.fillRect(0, 0, w, h);
 
@@ -178,7 +178,7 @@ function startViolationSimulation(eventType) {
       ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
     }
 
-    // 2. Determine Gaze State based on timeline loop
+    
     const cycle = step % 240;
     let gazeState = "normal";
     const typeUpper = eventType.toUpperCase();
@@ -193,25 +193,25 @@ function startViolationSimulation(eventType) {
       gazeState = cycle > 120 ? "look-away" : "normal";
     }
 
-    // Coordinates of Face
+    
     let fx = w / 2;
     let fy = h / 2 - 10;
 
-    // Render Face & Eye Indicators
+    
     if (gazeState !== "missing") {
-      // Draw Face Silhouette
+      
       ctx.strokeStyle = gazeState === "normal" ? "rgba(16, 185, 129, 0.2)" : "rgba(239, 68, 68, 0.2)";
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.arc(fx, fy, 45, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Draw Face Mesh lines
+      
       ctx.strokeStyle = gazeState === "normal" ? "rgba(52, 211, 153, 0.3)" : "rgba(248, 113, 113, 0.3)";
       ctx.fillStyle = gazeState === "normal" ? "rgba(52, 211, 153, 0.7)" : "rgba(248, 113, 113, 0.7)";
       ctx.lineWidth = 0.5;
 
-      // Draw facial points
+      
       let eyeOffsetX = 0;
       let eyeOffsetY = 0;
       if (gazeState === "look-away") {
@@ -228,7 +228,7 @@ function startViolationSimulation(eventType) {
         { x: fx + eyeOffsetX, y: fy + 22 + eyeOffsetY }
       ];
 
-      // Draw mesh connection lines
+      
       ctx.beginPath();
       ctx.moveTo(landmarks[1].x, landmarks[1].y);
       ctx.lineTo(landmarks[2].x, landmarks[2].y);
@@ -241,14 +241,14 @@ function startViolationSimulation(eventType) {
       ctx.closePath();
       ctx.stroke();
 
-      // Draw landmark dots
+      
       landmarks.forEach(p => {
         ctx.beginPath();
         ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
         ctx.fill();
       });
 
-      // Gaze Vector
+      
       if (gazeState === "look-away") {
         ctx.strokeStyle = "#f87171";
         ctx.lineWidth = 2.5;
@@ -265,7 +265,7 @@ function startViolationSimulation(eventType) {
         ctx.fill();
       }
 
-      // Draw second face if status is multiple
+      
       if (gazeState === "multiple") {
         let f2x = fx - 75;
         let f2y = fy + 15;
@@ -279,7 +279,7 @@ function startViolationSimulation(eventType) {
       }
     }
 
-    // 3. Draw Bounding Box & Status Tags
+    
     ctx.lineWidth = 1.5;
     if (gazeState === "normal") {
       ctx.strokeStyle = "#10b981";
@@ -321,7 +321,7 @@ function startViolationSimulation(eventType) {
       }
     }
 
-    // 4. Draw Simulated Timeline Slider
+    
     ctx.fillStyle = "rgba(255,255,255,0.06)";
     ctx.fillRect(15, h - 20, w - 30, 4);
     ctx.fillStyle = gazeState === "normal" ? "#10b981" : "#ef4444";
@@ -339,23 +339,36 @@ function closeReviewModal() {
     violationSimFrameId = null;
   }
   const videoWrapper = document.getElementById("video-wrapper");
-  if (videoWrapper) videoWrapper.innerHTML = ""; // Stop audio/video
+  if (videoWrapper) videoWrapper.innerHTML = ""; 
   document.getElementById("review-modal").style.display = "none";
 }
 
 function resolveViolation(resolutionType) {
   const incidentId = document.getElementById("review-modal-title-id").textContent;
-  alert(`Incident ${incidentId} flagged as: ${resolutionType}`);
   
-  // Clean up cache row status to simulate instant updates
   const match = cachedViolations.find(v => v.id === incidentId);
-  if (match) {
-    match.status = "Resolved";
-  }
-  
-  renderViolations(cachedViolations);
-  updateAlertStats(cachedViolations);
-  closeReviewModal();
+  if (!match) return;
+
+  fetch("/admin/resolve-violation", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id: match.rawId, status: "Resolved" })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      match.status = "Resolved";
+      renderViolations(cachedViolations);
+      updateAlertStats(cachedViolations);
+      closeReviewModal();
+    } else {
+      alert("Failed to resolve violation on server.");
+    }
+  })
+  .catch(err => {
+    console.error("Resolve error:", err);
+    alert("Error communicating with server.");
+  });
 }
 
 function getInitials(name) {

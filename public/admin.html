@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aethon Admin - Overview</title>
+  <title>Aethon Admin - Dashboard</title>
   <link rel="stylesheet" href="css/admin.css">
   <link rel="stylesheet" href="css/admin-agent.css">
   <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
 </head>
 <body>
 
-  <!-- LEFT SIDEBAR -->
+  
   <aside class="sidebar">
     <div class="sidebar-logo">
       <i class="ri-flashlight-line logo-icon"></i>
@@ -18,13 +18,13 @@
     </div>
     
     <nav class="sidebar-menu">
-      <a href="admin.html" class="menu-item active">
-        <i class="ri-dashboard-line"></i> Overview
+      <a href="admin.html" class="menu-item active" id="menu-dashboard">
+        <i class="ri-dashboard-line"></i> Dashboard
       </a>
       <a href="admin-students.html" class="menu-item">
         <i class="ri-group-line"></i> Students
       </a>
-      <a href="admin-assessments.html" class="menu-item">
+      <a href="admin-assessments.html" class="menu-item" id="menu-assessments">
         <i class="ri-shield-line"></i> Assessments
       </a>
       <a href="admin-monitoring.html" class="menu-item">
@@ -39,30 +39,29 @@
       <a href="#" class="menu-item" onclick="openAgent(); return false;" style="color: #c084fc;">
         <i class="ri-sparkling-fill" style="color: #c084fc;"></i> Aethon Intelligence
       </a>
+      <a href="admin-prompts.html" class="menu-item" style="color: #c084fc;">
+        <i class="ri-book-read-line" style="color: #c084fc;"></i> Prompt Library
+      </a>
       
     </nav>
     
     <div class="sidebar-profile">
-      <!-- Injected by admin-common.js -->
+      
     </div>
   </aside>
 
-  <!-- MAIN VIEWPORT -->
+  
   <div class="main-content">
     
-    <!-- TOP HEADER -->
+    
     <header class="top-header">
       <div class="breadcrumb">
         <span>Aethon Platform</span>
         <i class="ri-arrow-right-s-line"></i>
-        <span class="env-name">Admin Overview</span>
+        <span class="env-name" id="breadcrumb-title">Admin Overview</span>
       </div>
       
       <div class="header-actions">
-        <div class="pill-toggle">
-          <a href="dashboard.html" class="toggle-btn">Student View</a>
-          <a href="assessment.html" class="toggle-btn">Assessments</a>
-        </div>
         
         <div class="header-search">
           <i class="ri-search-line"></i>
@@ -75,128 +74,30 @@
       </div>
     </header>
 
-    <!-- CONTENT CONTAINER -->
+    
     <div class="page-container">
       
-      <div class="page-title-block">
-        <h1 class="page-title">Overview Dashboard</h1>
-        <p class="page-subtitle">Live platform statistics, student activity, and security monitoring.</p>
-      </div>
-
-      <!-- TOP METRICS ROW -->
-      <!-- <div class="metrics-row">
-
-        <div class="metric-card">
-          <div class="metric-header">
-            <span>Total Students</span>
-            <i class="ri-group-line"></i>
-          </div>
-          <div class="metric-value" id="stat-total-students">—</div>
-          <div class="metric-footer">
-            <span class="trend-up">Registered</span>
-            <span>on the platform</span>
-          </div>
+      <!-- Dashboard Overview View -->
+      <div id="dashboard-overview-view">
+        <div class="page-title-block">
+          <h1 class="page-title">Overview Dashboard</h1>
+          <p class="page-subtitle">Live platform statistics, student activity, and security monitoring.</p>
         </div>
 
-        <div class="metric-card">
-          <div class="metric-header">
-            <span>Total Assessments</span>
-            <i class="ri-file-list-3-line"></i>
-          </div>
-          <div class="metric-value" id="stat-active-tests">—</div>
-          <div class="metric-footer">
-            <span class="trend-up" id="stat-practice-sets">—</span>
-            <span>practice sets also</span>
-          </div>
-        </div>
+      
+      
 
-        <div class="metric-card">
-          <div class="metric-header">
-            <span>Total Questions</span>
-            <i class="ri-question-line"></i>
-          </div>
-          <div class="metric-value" id="stat-questions">—</div>
-          <div class="metric-footer">
-            <span class="trend-up">Across</span>
-            <span>all assessments</span>
-          </div>
-        </div>
+      
+      
 
-        <div class="metric-card">
-          <div class="metric-header">
-            <span>Security Flags</span>
-            <i class="ri-error-warning-line"></i>
-          </div>
-          <div class="metric-value" id="stat-flags">—</div>
-          <div class="metric-footer">
-            <span style="color: var(--danger); font-weight: 600;">Total violations</span>
-            <span>recorded</span>
-          </div>
-        </div>
-
-      </div> -->
-
-      <!-- SECONDARY METRICS ROW -->
-      <!-- <div class="metrics-row" style="margin-top: 16px;">
-
-        <div class="metric-card">
-          <div class="metric-header">
-            <span>Submissions</span>
-            <i class="ri-send-plane-line"></i>
-          </div>
-          <div class="metric-value" id="stat-submissions">—</div>
-          <div class="metric-footer">
-            <span class="trend-up">Students</span>
-            <span>who submitted</span>
-          </div>
-        </div>
-
-        <div class="metric-card">
-          <div class="metric-header">
-            <span>Average Score</span>
-            <i class="ri-bar-chart-line"></i>
-          </div>
-          <div class="metric-value" id="stat-avg-score">—</div>
-          <div class="metric-footer">
-            <span class="trend-up">Out of</span>
-            <span>total marks</span>
-          </div>
-        </div>
-
-        <div class="metric-card">
-          <div class="metric-header">
-            <span>Feedback Given</span>
-            <i class="ri-chat-check-line"></i>
-          </div>
-          <div class="metric-value" id="stat-feedback">—</div>
-          <div class="metric-footer">
-            <span class="trend-up">Responses</span>
-            <span>collected</span>
-          </div>
-        </div>
-
-        <div class="metric-card">
-          <div class="metric-header">
-            <span>Practice Sets</span>
-            <i class="ri-code-s-slash-line"></i>
-          </div>
-          <div class="metric-value" id="stat-practices">—</div>
-          <div class="metric-footer">
-            <span class="trend-up">Available</span>
-            <span>for students</span>
-          </div>
-        </div>
-
-      </div> -->
-
-      <!-- QUICK LINKS SECTION -->
+      
       <div class="charts-grid" style="margin-top: 24px;">
         <div class="chart-card">
           <div class="chart-title-block">
             <h3 class="chart-title">Quick Actions</h3>
           </div>
           <div style="display: flex; flex-direction: column; gap: 12px; padding: 8px 0;">
-            <a href="admin-assessments.html" style="display: flex; align-items: center; gap: 14px; padding: 14px 18px; background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.2); border-radius: 12px; text-decoration: none; color: inherit; transition: background 0.2s;">
+            <a href="admin-assessments.html" id="quick-manage-assessments" style="display: flex; align-items: center; gap: 14px; padding: 14px 18px; background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.2); border-radius: 12px; text-decoration: none; color: inherit; transition: background 0.2s;">
               <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(139,92,246,0.2); display: flex; align-items: center; justify-content: center; flex-shrink:0;">
                 <i class="ri-shield-line" style="color: #a78bfa; font-size: 18px;"></i>
               </div>
@@ -239,7 +140,7 @@
           </div>
         </div>
 
-        <!-- Platform Summary Panel -->
+        
         <div class="chart-card">
           <div class="chart-title-block">
             <h3 class="chart-title">Platform Summary</h3>
@@ -306,7 +207,7 @@
         </div>
       </div>
 
-      <!-- RECENT SECURITY EVENTS -->
+      
       <div class="panel-card" style="margin-top: 24px;">
         <div class="panel-header">
           <h2 style="font-size: 18px; font-weight: 700;">Recent Security Events</h2>
@@ -334,11 +235,50 @@
         </div>
       </div>
 
+      </div> <!-- Closes dashboard-overview-view -->
+
+      <!-- Dashboard Assessments View -->
+      <div id="dashboard-assessments-view" style="display: none;">
+        <div class="page-title-block">
+          <h1 class="page-title">Assessments</h1>
+          <p class="page-subtitle">All assessments and practice sessions created and stored in the database.</p>
+        </div>
+
+        <div class="panel-card" style="margin-top: 24px;">
+          <div class="panel-header">
+            <h2 style="font-size: 18px; font-weight: 700;">All Assessments</h2>
+            <div class="header-search" style="margin-left: auto; max-width: 300px;">
+              <i class="ri-search-line"></i>
+              <input type="text" id="dashboard-assessments-search" placeholder="Search assessments..." style="padding: 8px 12px 8px 36px;">
+            </div>
+          </div>
+
+          <div class="table-wrapper">
+            <table class="custom-table" id="dashboard-assessments-table">
+              <thead>
+                <tr>
+                  <th>Assessment Name</th>
+                  <th>Category</th>
+                  <th>Status</th>
+                  <th>Candidates</th>
+                  <th>Duration</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colspan="5" style="text-align: center; color: var(--gray-text); padding: 40px 0;">Loading assessments...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
 
-  <!-- AETHON INTELLIGENCE FULLSCREEN OVERLAY -->
+  
   <div id="agent-overlay" class="agent-overlay">
     <div class="agent-sidebar">
       <div class="sidebar-header">
@@ -346,7 +286,7 @@
         <button onclick="newChat()"><i class="ri-add-line"></i></button>
       </div>
       <div id="agent-history-list" class="history-list">
-        <!-- Sessions load here -->
+        
       </div>
     </div>
     
@@ -364,7 +304,7 @@
       </div>
 
       <div id="agent-chat-container" class="agent-chat-container">
-        <!-- Default State -->
+        
         <div id="agent-welcome" class="agent-welcome">
           <div class="big-orb"></div>
           <h2>How can I help you today?</h2>
@@ -385,21 +325,6 @@
             <button onclick="sendSuggested('Identify students at academic risk')">Identify students at academic risk</button>
           </div>
 
-          <button class="manual-toggle-btn" onclick="document.getElementById('prompt-manual').classList.toggle('show')">
-            <i class="ri-book-read-line"></i> View Prompt Manual for Beginners
-          </button>
-          
-          <div id="prompt-manual" class="prompt-manual">
-            <h4><i class="ri-lightbulb-flash-line"></i> How to talk to Aethon Intelligence</h4>
-            <p>You can ask Aethon to fetch, filter, and analyze any data from the platform. Try formats like these:</p>
-            <ul>
-              <li><strong>Counting:</strong> "How many students are registered?" or "How many assessments do we have?"</li>
-              <li><strong>Filtering:</strong> "List all students from [College Name]."</li>
-              <li><strong>Scoring:</strong> "Show me the top 10 students with the highest average scores."</li>
-              <li><strong>Security:</strong> "Find all students who have a 'Critical' severity proctoring violation."</li>
-              <li><strong>Specifics:</strong> "What is the average score for the assessment titled [Assessment Name]?"</li>
-            </ul>
-          </div>
         </div>
 
         <div id="agent-messages" class="agent-messages" style="display:none;"></div>

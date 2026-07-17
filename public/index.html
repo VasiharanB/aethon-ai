@@ -8,51 +8,47 @@
     <link rel="stylesheet" href="css/landing.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
 <body>
-    <!-- Background overlay for subtle movement -->
+    <canvas id="bg-canvas" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -2; pointer-events: none;"></canvas>
+    
     <div class="bg-gradient-overlay"></div>
 
     <nav class="navbar">
         <div class="container nav-container">
             <div class="logo">
-                <span class="logo-icon"><i class="fa-solid fa-bolt"></i></span>
-                Aethon
+                <img src="assets/logo.png" alt="Aethon Logo" class="logo-img">
             </div>
             <div class="nav-links">
                 <a href="#features">Features</a>
                 <a href="#process">How it Works</a>
                 <a href="#testimonials">Testimonials</a>
+                <a href="#contact">Contact</a>
             </div>
             <div class="nav-actions">
-                <a href="login.html" class="btn btn-secondary btn-sm">Student Login</a>
-                <a href="login.html" class="btn btn-primary btn-sm">Admin Login</a>
+                <a href="login.html" class="btn btn-secondary btn-sm">Log In</a>
+                <a href="signup.html" class="btn btn-primary btn-sm">Sign Up</a>
             </div>
         </div>
-    </nav>
-
-    <!-- TOAST CONTAINER -->
-    <div id="toast-container" class="toast-container"></div>
+    </nav><br><br>
 
     <main>
-        <!-- HERO SECTION -->
         <section class="hero pt-10" id="hero">
             <div class="container hero-container">
                 <div class="hero-content fade-up-anim">
+
                     <div class="badge">✨ Next-Gen AI Assessments</div>
-                    <h1>Ace Every <span class="text-gradient">Assessment</span></h1>
-                    <p>Unlock your potential with our AI-driven assessment and placement preparation platform. Get
-                        actionable insights, detailed analytics, and real-time proctoring.</p>
+                    <h1>Ace Every<br><span class="text-gradient">Assessment.</span></h1>
+                    <p>Unlock your potential with our AI-driven assessment and placement preparation platform. Get actionable insights, detailed analytics, and real-time proctoring.</p>
                     <div class="hero-buttons">
-                        <a href="login.html" class="btn btn-primary">Start for Free <i class="fa-solid fa-arrow-right"></i></a>
+                        <a href="signup.html" class="btn btn-primary">Start for Free <i class="fa-solid fa-arrow-right"></i></a>
                         <a href="#" class="btn btn-secondary">Watch Demo <i class="fa-solid fa-play"></i></a>
                     </div>
                 </div>
+                
                 <div class="hero-visual">
                     <div class="dashboard-mock floating">
                         <div class="dash-header">
@@ -67,14 +63,14 @@
                         </div>
                         <div class="dash-grid">
                             <div class="dash-card">
-                                <div class="dash-icon"><i class="fa-solid fa-code"></i></div>
+                                <div class="dash-icon"><i class="fa-solid fa-code text-blue"></i></div>
                                 <h4>Coding Arena</h4>
                                 <div class="progress-bar">
                                     <div class="progress" style="width: 85%"></div>
                                 </div>
                             </div>
                             <div class="dash-card">
-                                <div class="dash-icon"><i class="fa-solid fa-brain"></i></div>
+                                <div class="dash-icon"><i class="fa-solid fa-brain text-orange"></i></div>
                                 <h4>Aptitude</h4>
                                 <div class="progress-bar">
                                     <div class="progress" style="width: 95%"></div>
@@ -91,78 +87,71 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- Mock Toasts inside Dashboard -->
                         <div class="mock-toast toast-1">
-                            <i class="fa-solid fa-check-circle text-green"></i>
+                            <i class="fa-solid fa-circle-check text-green"></i>
                             <div>
                                 <strong>Assessment Passed</strong>
                                 <span>Advanced Algorithms</span>
                             </div>
                         </div>
                         <div class="mock-toast toast-2">
-                            <i class="fa-solid fa-arrow-trend-up text-primary"></i>
+                            <i class="fa-solid fa-arrow-trend-up text-blue"></i>
                             <div>
                                 <strong>Rank Improved</strong>
                                 <span>Top 5% globally</span>
                             </div>
                         </div>
                     </div>
-                    <!-- Background Glow for Dashboard -->
                     <div class="hero-glow"></div>
                 </div>
             </div>
-        </section>
+        </section><br><br><br><br><br><br>  
 
-        <!-- STATS SECTION -->
         <section class="stats" id="stats">
-            <div class="container stats-grid">
-                <div class="stat-card reveal">
-                    <div class="stat-icon"><i class="fa-solid fa-building-columns"></i></div>
-                    <div class="stat-number" data-target="5">0</div><span>+</span>
+            <div class="container stats-grid reveal stagger-1">
+                <div class="stat-card">
+                    <div class="stat-number" data-target="5+">0</div>
                     <div class="stat-label">Colleges</div>
                 </div>
-                <div class="stat-card reveal">
-                    <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
-                    <div class="stat-number" data-target="5000">0</div><span>+</span>
+                <div class="stat-card">
+                    <div class="stat-number" data-target="5000+">0</div>
                     <div class="stat-label">Students</div>
                 </div>
-                <div class="stat-card reveal">
-                    <div class="stat-icon"><i class="fa-solid fa-file-signature"></i></div>
-                    <div class="stat-number" data-target="100000">0</div><span>+</span>
+                <div class="stat-card">
+                    <div class="stat-number" data-target="100000+">0</div>
                     <div class="stat-label">Assessments</div>
                 </div>
-                <div class="stat-card reveal">
-                    <div class="stat-icon"><i class="fa-solid fa-briefcase"></i></div>
-                    <div class="stat-number" data-target="95">0</div><span>%</span>
+                <div class="stat-card">
+                    <div class="stat-number" data-target="95%">0</div>
                     <div class="stat-label">Placement Rate</div>
                 </div>
             </div>
         </section>
 
-        <!-- PROCESS SECTION -->
         <section class="process section-padding" id="process">
             <div class="container">
                 <div class="section-header reveal">
+                    <div class="mini-badge">HOW IT WORKS</div>
                     <h2>Start in <span class="text-gradient">3 Easy Steps</span></h2>
-                    <p>Your journey to success is just a few clicks away.</p>
+                    <p class="section-subtitle">Your journey to success is just a few clicks away.</p>
                 </div>
-                <div class="process-steps">
-                    <div class="step reveal stagger-1">
-                        <div class="step-number">01</div>
+                <div class="process-steps reveal stagger-1">
+                    <div class="step">
+                        <span class="step-number">Step 01</span>
                         <div class="step-icon"><i class="fa-solid fa-user-plus"></i></div>
                         <h3>Sign Up Free</h3>
                         <p>Create your account in seconds and set up your personalized dashboard.</p>
                     </div>
-                    <div class="step-connector reveal stagger-2"></div>
-                    <div class="step reveal stagger-3">
-                        <div class="step-number">02</div>
+                    <div class="step-connector"></div>
+                    <div class="step">
+                        <span class="step-number">Step 02</span>
                         <div class="step-icon"><i class="fa-solid fa-laptop-code"></i></div>
                         <h3>Take Assessments</h3>
                         <p>Participate in AI-proctored tests and coding challenges to prove your skills.</p>
                     </div>
-                    <div class="step-connector reveal stagger-4"></div>
-                    <div class="step reveal stagger-5">
-                        <div class="step-number">03</div>
+                    <div class="step-connector"></div>
+                    <div class="step">
+                        <span class="step-number">Step 03</span>
                         <div class="step-icon"><i class="fa-solid fa-award"></i></div>
                         <h3>Get Placed</h3>
                         <p>Share your verified scores with top companies and land your dream job.</p>
@@ -171,53 +160,135 @@
             </div>
         </section>
 
-        <!-- FEATURES SECTION -->
         <section class="features section-padding" id="features">
             <div class="container">
                 <div class="section-header reveal">
+                    <div class="mini-badge">PLATFORM FEATURES</div>
                     <h2>Platform <span class="text-gradient">Features</span></h2>
-                    <p>Everything you need to conduct and take professional assessments.</p>
+                    <p class="section-subtitle">Everything you need to conduct and take professional assessments.</p>
                 </div>
-                <div class="features-grid">
-                    <div class="feature-card reveal">
-                        <div class="feature-icon"><i class="fa-solid fa-terminal"></i></div>
-                        <h3>Coding Arena</h3>
-                        <p>In-browser IDE with support for 20+ languages and automated test cases.</p>
+                
+                <div class="bento-grid reveal stagger-1">
+                    <div class="bento-card span-2 card-coding-arena">
+                        <div class="bento-card-info">
+                            <span class="badge-live">Live</span>
+                            <h3><i class="fa-solid fa-code text-blue"></i> Coding Arena</h3>
+                            <p>In-browser IDE with support for 20+ languages and automated test cases.</p>
+                        </div>
+                        <div class="bento-mockup coding-mock">
+                            <div class="mock-tabs">
+                                <span class="tab active">main.py</span>
+                            </div>
+                            <pre class="mock-code"><code><span class="keyword">class</span> <span class="class-name">Solution</span>:
+    <span class="keyword">def</span> <span class="function">maxSubArray</span>(self, nums):
+        max_sum = cur = nums[<span class="number">0</span>]
+        <span class="keyword">for</span> n <span class="keyword">in</span> nums[<span class="number">1</span>:]:
+            cur = <span class="function">max</span>(n, cur + n)
+            max_sum = <span class="function">max</span>(max_sum, cur)
+        <span class="keyword">return</span> max_sum</code></pre>
+                            <div class="terminal-bar">✓ All test cases passed - 28ms - O(n)</div>
+                        </div>
                     </div>
-                    <div class="feature-card reveal stagger-1">
-                        <div class="feature-icon"><i class="fa-solid fa-eye"></i></div>
-                        <h3>AI Proctoring</h3>
-                        <p>Advanced anti-cheat mechanisms including face tracking and tab monitoring.</p>
+
+                    <div class="bento-card card-proctoring">
+                        <div class="bento-card-info">
+                            <h3><i class="fa-solid fa-eye text-blue"></i> AI Proctoring</h3>
+                            <p>Advanced anti-cheat mechanisms including face tracking and tab monitoring.</p>
+                        </div>
+                        <div class="bento-mockup proctor-mock">
+                            <div class="proctor-frame">
+                                <div class="face-scanner"></div>
+                                <div class="pills-overlay">
+                                    <span class="pill-green">Face Detected</span>
+                                    <span class="pill-green">Focus: On Screen</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="feature-card reveal stagger-2">
-                        <div class="feature-icon"><i class="fa-solid fa-chart-pie"></i></div>
-                        <h3>Deep Analytics</h3>
-                        <p>Granular performance metrics, skill gaps identification, and peer comparison.</p>
+
+                    <div class="bento-card card-analytics">
+                        <div class="bento-card-info">
+                            <h3><i class="fa-solid fa-chart-pie text-blue"></i> Deep Analytics</h3>
+                            <p>Granular performance metrics, skill gaps identification, and peer comparison.</p>
+                        </div>
+                        <div class="bento-mockup chart-mock-bento">
+                            <div class="bento-chart-line-box">
+                                <div class="chart-point" style="bottom: 25%; left: 10%;"></div>
+                                <div class="chart-point" style="bottom: 45%; left: 30%;"></div>
+                                <div class="chart-point" style="bottom: 40%; left: 50%;"></div>
+                                <div class="chart-point" style="bottom: 65%; left: 70%;"></div>
+                                <div class="chart-point" style="bottom: 85%; left: 90%;"></div>
+                                <svg class="chart-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+                                    <path d="M 10 75 L 30 55 L 50 60 L 70 35 L 90 15" fill="none" stroke="var(--primary)" stroke-width="2"></path>
+                                </svg>
+                            </div>
+                            <div class="chart-axis-labels">
+                                <span>Test 1</span>
+                                <span>Test 2</span>
+                                <span>Test 3</span>
+                                <span>Test 4</span>
+                                <span>Test 5</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="feature-card reveal">
-                        <div class="feature-icon"><i class="fa-solid fa-bolt"></i></div>
-                        <h3>Instant Results</h3>
-                        <p>Real-time evaluation and instant score generation upon submission.</p>
+
+                    <div class="bento-card card-qbank">
+                        <div class="bento-card-info">
+                            <h3><i class="fa-solid fa-bolt text-blue"></i> Instant Results</h3>
+                            <p>Real-time evaluation and instant score generation upon submission.</p>
+                        </div>
+                        <div class="bento-mockup qbank-mock">
+                            <div class="q-row"><span>1. Two Sum (Java)</span><span class="dif-badge hard">Passed</span></div>
+                            <div class="q-row"><span>2. Longest Prefix (Python)</span><span class="dif-badge medium">Passed</span></div>
+                            <div class="q-row"><span>3. QuickSort (C++)</span><span class="dif-badge hard">Passed</span></div>
+                        </div>
                     </div>
-                    <div class="feature-card reveal stagger-1">
-                        <div class="feature-icon"><i class="fa-solid fa-certificate"></i></div>
-                        <h3>Certifications</h3>
-                        <p>Verifiable digital certificates mapped to industry standards.</p>
+
+                    <div class="bento-card card-certs">
+                        <div class="bento-card-info">
+                            <h3><i class="fa-solid fa-certificate text-orange"></i> Certifications</h3>
+                            <p>Verifiable digital certificates mapped to industry standards.</p>
+                        </div>
+                        <div class="bento-mockup certs-mock">
+                            <div class="mini-cert">
+                                <div class="cert-title">VERIFIABLE DIGITAL CREDENTIAL</div>
+                                <div class="cert-recipient">Priya Patel</div>
+                                <div class="cert-desc">Data Structures & Algorithms • Aethon</div>
+                                <div class="cert-footer"><span class="qr-pill">Verify QR</span></div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="feature-card reveal stagger-2">
-                        <div class="feature-icon"><i class="fa-solid fa-users-gear"></i></div>
-                        <h3>Batch Management</h3>
-                        <p>Organize students into batches and track collective progress easily.</p>
+
+                    <div class="bento-card span-2 card-batch">
+                        <div class="bento-card-info" style="flex: 1;">
+                            <h3><i class="fa-solid fa-users-gear text-green"></i> Batch Management</h3>
+                            <p>Organize students into batches and track collective progress easily.</p>
+                        </div>
+                        <div class="bento-mockup batch-mock" style="flex: 1.5; min-height: 120px;">
+                            <div class="batch-row">
+                                <span class="avatar-letter blue-bg">P</span>
+                                <span class="name">Priya Patel</span>
+                                <span class="score text-green">96%</span>
+                            </div>
+                            <div class="batch-row">
+                                <span class="avatar-letter purple-bg">R</span>
+                                <span class="name">Rahul Singh</span>
+                                <span class="score text-green">89%</span>
+                            </div>
+                            <div class="batch-row">
+                                <span class="avatar-letter blue-bg">S</span>
+                                <span class="name">Dr. Sharma (Director)</span>
+                                <span class="score text-green">Active</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- TECH STACK SECTION -->
         <section class="tech-stack py-5">
             <div class="container">
-                <h3 class="text-center mb-3 text-muted reveal" style="text-align: center; margin-bottom: 2rem;">Powered
-                    by modern technologies</h3>
+                <h3 class="text-center mb-3 text-muted reveal" style="text-align: center; margin-bottom: 2rem; font-size: 13px; letter-spacing: 0.08em; font-weight: 700; color: var(--text-dim);">POWERED BY MODERN TECHNOLOGIES</h3>
                 <div class="marquee-container reveal">
                     <div class="marquee-content">
                         <span class="tech-pill"><i class="fa-brands fa-python"></i> Python</span>
@@ -230,7 +301,7 @@
                         <span class="tech-pill"><i class="fa-solid fa-database"></i> PostgreSQL</span>
                         <span class="tech-pill"><i class="fa-brands fa-docker"></i> Docker</span>
                         <span class="tech-pill"><i class="fa-brands fa-aws"></i> AWS</span>
-                        <!-- Duplicate for seamless scroll -->
+                        
                         <span class="tech-pill"><i class="fa-brands fa-python"></i> Python</span>
                         <span class="tech-pill"><i class="fa-brands fa-js"></i> JavaScript</span>
                         <span class="tech-pill"><i class="fa-brands fa-java"></i> Java</span>
@@ -246,64 +317,52 @@
             </div>
         </section>
 
-        <!-- TESTIMONIALS SECTION -->
         <section class="testimonials section-padding" id="testimonials">
             <div class="container">
                 <div class="section-header reveal">
+                    <div class="mini-badge">TESTIMONIALS</div>
                     <h2>Loved by <span class="text-gradient">Students & Institutions</span></h2>
-                    <p>See what our users have to say about their experience.</p>
+                    <p class="section-subtitle">See what our users have to say about their experience.</p>
                 </div>
-                <div class="carousel-container reveal">
-                    <div class="carousel-track">
-                        <div class="testimonial-card">
-                            <div class="stars">
-                                <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
-                                    class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
-                                    class="fa-solid fa-star"></i>
-                            </div>
-                            <p class="quote">"Examate completely transformed our placement drives. The AI proctoring is
-                                flawless, and the coding arena feels just like a real IDE."</p>
-                            <div class="author">
-                                <div class="author-avatar"
-                                    style="background-image: url('https://i.pravatar.cc/150?img=11')"></div>
-                                <div>
-                                    <h4>Dr. Sharma</h4>
-                                    <span>Placement Director</span>
-                                </div>
+                <div class="testimonials-grid reveal stagger-1">
+                    <div class="testimonial-glass-card">
+                        <div class="rating-stars">
+                            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                        </div>
+                        <p class="test-quote">"Aethon completely transformed our placement drives. The AI proctoring is flawless, and the coding arena feels just like a real IDE."</p>
+                        <div class="test-author">
+                            <div class="author-avatar-initials" style="background: #0ea5e9;">DS</div>
+                            <div>
+                                <h4>Dr. Sharma</h4>
+                                <span class="title">Placement Director</span>
                             </div>
                         </div>
-                        <div class="testimonial-card active">
-                            <div class="stars">
-                                <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
-                                    class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
-                                    class="fa-solid fa-star"></i>
-                            </div>
-                            <p class="quote">"Thanks to the detailed analytics, I knew exactly which data structures to
-                                focus on. Landed my dream job at a top tech company!"</p>
-                            <div class="author">
-                                <div class="author-avatar"
-                                    style="background-image: url('https://i.pravatar.cc/150?img=32')"></div>
-                                <div>
-                                    <h4>Priya Patel</h4>
-                                    <span>Software Engineer</span>
-                                </div>
+                    </div>
+
+                    <div class="testimonial-glass-card">
+                        <div class="rating-stars">
+                            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                        </div>
+                        <p class="test-quote">"Thanks to the detailed analytics, I knew exactly which data structures to focus on. Landed my dream job at a top tech company!"</p>
+                        <div class="test-author">
+                            <div class="author-avatar-initials" style="background: #6366f1;">PP</div>
+                            <div>
+                                <h4>Priya Patel</h4>
+                                <span class="title">Software Engineer</span>
                             </div>
                         </div>
-                        <div class="testimonial-card">
-                            <div class="stars">
-                                <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
-                                    class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
-                                    class="fa-solid fa-star"></i>
-                            </div>
-                            <p class="quote">"The interface is so clean and modern. Taking assessments here doesn't feel
-                                stressful. The instant feedback is a game changer."</p>
-                            <div class="author">
-                                <div class="author-avatar"
-                                    style="background-image: url('https://i.pravatar.cc/150?img=15')"></div>
-                                <div>
-                                    <h4>Rahul Singh</h4>
-                                    <span>Final Year Student</span>
-                                </div>
+                    </div>
+
+                    <div class="testimonial-glass-card">
+                        <div class="rating-stars">
+                            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                        </div>
+                        <p class="test-quote">"The interface is so clean and modern. Taking assessments here doesn't feel stressful. The instant feedback is a game changer."</p>
+                        <div class="test-author">
+                            <div class="author-avatar-initials" style="background: #10b981;">RS</div>
+                            <div>
+                                <h4>Rahul Singh</h4>
+                                <span class="title">Final Year Student</span>
                             </div>
                         </div>
                     </div>
@@ -311,16 +370,16 @@
             </div>
         </section>
 
-        <!-- CTA SECTION -->
         <section class="cta section-padding" id="cta">
             <div class="container">
-                <div class="cta-container reveal">
-                    <div class="cta-glow"></div>
-                    <div class="cta-content">
+                <div class="cta-inner-panel reveal">
+                    <div class="cta-glow-bg"></div>
+                    <div class="cta-panel-content">
+                        <div class="mini-badge">GET STARTED</div>
                         <h2>Ready to modernize your assessment workflow?</h2>
                         <p>Join thousands of users who have already upgraded their experience.</p>
-                        <div class="cta-buttons">
-                            <a href="#" class="btn btn-primary btn-lg">Get Started Now</a>
+                        <div class="hero-buttons" style="justify-content: center;">
+                            <a href="signup.html" class="btn btn-primary btn-lg">Get Started Now</a>
                             <a href="#contact" class="btn btn-secondary btn-lg">Contact Sales</a>
                         </div>
                     </div>
@@ -328,30 +387,30 @@
             </div>
         </section>
 
-        <!-- CONTACT SECTION -->
         <section class="contact section-padding" id="contact">
             <div class="container">
                 <div class="section-header reveal">
+                    <div class="mini-badge">GET IN TOUCH</div>
                     <h2>Get in <span class="text-gradient">Touch</span></h2>
-                    <p>Have questions? We're here to help.</p>
+                    <p class="section-subtitle">Have questions? We're here to help.</p>
                 </div>
                 <div class="contact-grid">
                     <div class="contact-card reveal">
                         <div class="contact-icon"><i class="fa-solid fa-envelope"></i></div>
                         <h3>Email Us</h3>
-                        <p>support@examate.ai</p>
-                        <a href="mailto:support@examate.ai" class="btn btn-secondary btn-sm mt-2">Send Email</a>
+                        <p>mohammedshameem1105@gmail.com</p>
+                        <a href="mailto:support@aethon.ai" class="btn btn-secondary btn-sm mt-2">Send Email</a>
                     </div>
                     <div class="contact-card reveal stagger-1">
                         <div class="contact-icon"><i class="fa-solid fa-phone"></i></div>
                         <h3>Call Us</h3>
-                        <p>+1 (555) 123-4567</p>
-                        <a href="tel:+15551234567" class="btn btn-secondary btn-sm mt-2">Call Now</a>
+                        <p>+91 7305794294</p>
+                        <a href="tel:+91 7305794294" class="btn btn-secondary btn-sm mt-2">Call Now</a>
                     </div>
                     <div class="contact-card reveal stagger-2">
                         <div class="contact-icon"><i class="fa-solid fa-location-dot"></i></div>
                         <h3>Visit Us</h3>
-                        <p>Tech Park, Silicon Valley, CA</p>
+                        <p>Madipakkam, Chennai, Tamil Nadu, India.</p>
                         <a href="#" class="btn btn-secondary btn-sm mt-2">Get Directions</a>
                     </div>
                 </div>
@@ -359,33 +418,32 @@
         </section>
     </main>
 
-    <!-- FOOTER -->
     <footer>
-        <div class="container footer-container">
-            <div class="footer-brand">
-                <div class="logo">
-                    <span class="logo-icon"><i class="fa-solid fa-brain"></i></span>
-                    Examate
+        <div class="container footer-grid-container">
+            <div class="footer-col" style="grid-column: span 2;">
+                <div class="logo" style="margin-bottom: 12px;">
+                    <img src="assets/logo.png" alt="Aethon Logo" class="logo-img">
+
                 </div>
-                <p>Empowering the next generation of talent with AI-driven assessments and analytics.</p>
-                <div class="social-links">
+                <p style="color: var(--text-muted); max-width: 320px; line-height: 1.6; margin-bottom: 20px;">Empowering the next generation of talent with AI-driven assessments and analytics.</p>
+                <div class="footer-social-links" style="margin-top: 10px;">
                     <a href="#"><i class="fa-brands fa-twitter"></i></a>
                     <a href="#"><i class="fa-brands fa-linkedin"></i></a>
                     <a href="#"><i class="fa-brands fa-github"></i></a>
                     <a href="#"><i class="fa-brands fa-discord"></i></a>
                 </div>
             </div>
-            <div class="footer-links">
-                <h4>Product</h4>
+            <div class="footer-col">
+                <h4>PRODUCT</h4>
                 <ul>
-                    <li><a href="#">Features</a></li>
-                    <li><a href="#">Pricing</a></li>
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#cta">Pricing</a></li>
                     <li><a href="#">Case Studies</a></li>
                     <li><a href="#">Reviews</a></li>
                 </ul>
             </div>
-            <div class="footer-links">
-                <h4>Resources</h4>
+            <div class="footer-col">
+                <h4>RESOURCES</h4>
                 <ul>
                     <li><a href="#">Documentation</a></li>
                     <li><a href="#">Blog</a></li>
@@ -393,18 +451,12 @@
                     <li><a href="#">API</a></li>
                 </ul>
             </div>
-            <div class="footer-links">
-                <h4>Company</h4>
-                <ul>
-                    <li><a href="#">About Us</a></li>
-                    <li><a href="#">Careers</a></li>
-                    <li><a href="#">Privacy Policy</a></li>
-                    <li><a href="#">Terms of Service</a></li>
-                </ul>
-            </div>
         </div>
-        <div class="container footer-bottom">
-            <p>&copy; 2026 Examate Inc. All rights reserved.</p>
+        
+        <div class="container footer-bottom-row">
+            <div class="footer-brand">
+                <span>&copy; 2026 Aethon Inc. All rights reserved.</span>
+            </div>
         </div>
     </footer>
 

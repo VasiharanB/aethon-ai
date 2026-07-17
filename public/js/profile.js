@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const email = localStorage.getItem("userEmail") || "Not provided";
   const role = localStorage.getItem("role") || "student";
   
-  // These might not exist in localStorage yet, using fallbacks
+  
   const phone = localStorage.getItem("userPhone") || "Update in Settings";
   const college = localStorage.getItem("userCollege") || "PSVPEC College";
   const roll = localStorage.getItem("userRoll") || "Not Assigned";

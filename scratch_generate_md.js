@@ -6,7 +6,7 @@ const IGNORE_DIRS = ['node_modules', 'build', '.git', 'coverage'];
 const IGNORE_FILES = ['package-lock.json'];
 const ALLOWED_EXTENSIONS = ['.js', '.jsx', '.html', '.css', '.json'];
 
-// We also want to exclude the scratch files I've created today
+
 const isScratchFile = (filename) => filename.startsWith('scratch_');
 
 let markdownContent = `# Aethon Project Source Code
@@ -81,7 +81,7 @@ function walkDir(dir) {
 const allFiles = walkDir(__dirname);
 
 allFiles.forEach(file => {
-    const ext = path.extname(file).substring(1); // remove dot
+    const ext = path.extname(file).substring(1); 
     const relativePath = path.relative(__dirname, file).replace(/\\/g, '/');
     
     markdownContent += `### File: \`${relativePath}\`\n\n`;

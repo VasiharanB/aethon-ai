@@ -1,4 +1,4 @@
-// admin-monitoring.js - Manage live proctoring grid and focus controls
+
 
 let isAutoFocusActive = false;
 
@@ -56,7 +56,7 @@ const mockFeeds = [
 document.addEventListener("DOMContentLoaded", () => {
   renderFeeds(mockFeeds);
   
-  // Simulate active timers incrementing
+  
   setInterval(tickTimers, 1000);
 });
 
@@ -129,28 +129,28 @@ function startCanvasAnimations() {
 
       ctx.clearRect(0, 0, w, h);
 
-      // 1. Faint digital blue-gray video noise background
+      
       ctx.fillStyle = "rgba(10, 12, 22, 0.82)";
       ctx.fillRect(0, 0, w, h);
 
-      // 2. Face Mesh (Eye and facial features tracking mesh)
+      
       ctx.strokeStyle = status === "normal" ? "rgba(16, 185, 129, 0.25)" : "rgba(239, 68, 68, 0.25)";
       ctx.fillStyle = status === "normal" ? "rgba(52, 211, 153, 0.7)" : "rgba(248, 113, 113, 0.7)";
       ctx.lineWidth = 1;
 
-      // Dynamic motion simulation based on status
+      
       let offsetX = 0;
       let offsetY = 0;
       if (status === "warning") {
-        // Shift eye landmarks/position to simulate looking away
+        
         offsetX = Math.sin(step * 0.05) * 16 + 24;
         offsetY = Math.cos(step * 0.04) * 8 - 12;
       } else if (status === "critical") {
-        // Glitch or drop face mesh coordinates (simulating no face)
+        
         offsetX = 999; 
         offsetY = 999;
       } else {
-        // Subtle ambient micro-movements
+        
         offsetX = Math.sin(step * 0.02) * 3;
         offsetY = Math.cos(step * 0.02) * 3;
       }
@@ -158,36 +158,36 @@ function startCanvasAnimations() {
       const centerX = w / 2 + offsetX;
       const centerY = h / 2 + offsetY;
 
-      // Only draw landmarks if face is in frame (non-critical)
+      
       if (status !== "critical") {
         const landmarks = [
-          { x: centerX, y: centerY - 15 }, // Nose
-          { x: centerX - 25, y: centerY - 30 }, // Left Eye
-          { x: centerX + 25, y: centerY - 30 }, // Right Eye
-          { x: centerX - 15, y: centerY + 15 }, // Mouth Left
-          { x: centerX + 15, y: centerY + 15 }, // Mouth Right
-          { x: centerX, y: centerY + 22 }, // Mouth Bottom
-          { x: centerX - 40, y: centerY }, // Left Cheek
-          { x: centerX + 40, y: centerY }, // Right Cheek
-          { x: centerX, y: centerY + 40 }, // Chin
+          { x: centerX, y: centerY - 15 }, 
+          { x: centerX - 25, y: centerY - 30 }, 
+          { x: centerX + 25, y: centerY - 30 }, 
+          { x: centerX - 15, y: centerY + 15 }, 
+          { x: centerX + 15, y: centerY + 15 }, 
+          { x: centerX, y: centerY + 22 }, 
+          { x: centerX - 40, y: centerY }, 
+          { x: centerX + 40, y: centerY }, 
+          { x: centerX, y: centerY + 40 }, 
         ];
 
-        // Draw connections
+        
         ctx.beginPath();
-        // Eyes and nose
+        
         ctx.moveTo(landmarks[1].x, landmarks[1].y);
         ctx.lineTo(landmarks[2].x, landmarks[2].y);
         ctx.lineTo(landmarks[0].x, landmarks[0].y);
         ctx.closePath();
 
-        // Mouth outline
+        
         ctx.moveTo(landmarks[0].x, landmarks[0].y);
         ctx.lineTo(landmarks[3].x, landmarks[3].y);
         ctx.lineTo(landmarks[5].x, landmarks[5].y);
         ctx.lineTo(landmarks[4].x, landmarks[4].y);
         ctx.closePath();
 
-        // Cheeks
+        
         ctx.moveTo(landmarks[6].x, landmarks[6].y);
         ctx.lineTo(landmarks[3].x, landmarks[3].y);
         ctx.lineTo(landmarks[8].x, landmarks[8].y);
@@ -195,14 +195,14 @@ function startCanvasAnimations() {
         ctx.lineTo(landmarks[7].x, landmarks[7].y);
         ctx.stroke();
 
-        // Draw dots
+        
         landmarks.forEach(p => {
           ctx.beginPath();
           ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
           ctx.fill();
         });
 
-        // 3. Draw high-tech bounding box brackets
+        
         ctx.lineWidth = 2;
         ctx.strokeStyle = status === "normal" ? "rgba(16, 185, 129, 0.75)" : "rgba(245, 158, 11, 0.85)";
         const boxSizeW = 100;
@@ -212,17 +212,17 @@ function startCanvasAnimations() {
         const by = centerY - boxSizeH / 2 - 5;
         
         const len = 12;
-        // Top Left
+        
         ctx.beginPath(); ctx.moveTo(bx, by + len); ctx.lineTo(bx, by); ctx.lineTo(bx + len, by); ctx.stroke();
-        // Top Right
+        
         ctx.beginPath(); ctx.moveTo(bx + boxSizeW, by + len); ctx.lineTo(bx + boxSizeW, by); ctx.lineTo(bx + boxSizeW - len, by); ctx.stroke();
-        // Bottom Left
+        
         ctx.beginPath(); ctx.moveTo(bx, by + boxSizeH - len); ctx.lineTo(bx, by + boxSizeH); ctx.lineTo(bx + len, by + boxSizeH); ctx.stroke();
-        // Bottom Right
+        
         ctx.beginPath(); ctx.moveTo(bx + boxSizeW, by + boxSizeH - len); ctx.lineTo(bx + boxSizeW, by + boxSizeH); ctx.lineTo(bx + boxSizeW - len, by + boxSizeH); ctx.stroke();
       }
 
-      // 4. Sweeping scanline
+      
       ctx.strokeStyle = status === "normal" ? "rgba(52, 211, 153, 0.12)" : "rgba(239, 68, 68, 0.12)";
       ctx.lineWidth = 1.5;
       const scanY = (Math.sin(step * 0.035) * 0.5 + 0.5) * h;
@@ -231,7 +231,7 @@ function startCanvasAnimations() {
       ctx.lineTo(w, scanY);
       ctx.stroke();
 
-      // 5. Telemetry text overlay
+      
       ctx.font = "8px 'Fira Code', monospace, Courier New";
       ctx.fillStyle = status === "normal" ? "#34d399" : (status === "warning" ? "#fbbf24" : "#f87171");
       
@@ -263,7 +263,7 @@ function toggleAutoFocus() {
     btn.style.color = "var(--primary-hover)";
     btn.style.borderColor = "var(--primary)";
     
-    // Filter feeds to show only warning and critical
+    
     const filtered = mockFeeds.filter(f => f.status === "warning" || f.status === "critical");
     renderFeeds(filtered);
   } else {

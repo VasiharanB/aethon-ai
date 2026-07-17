@@ -24,11 +24,48 @@
     }
     
     body {
-      background-color: var(--bg);
+      background-color: #070b14;
       color: var(--text);
       padding: 2rem;
       max-width: 1200px;
       margin: 0 auto;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    /* Ambient Deep Light Field */
+    body::before {
+      content: "";
+      position: fixed;
+      top: -50%; left: -50%; width: 200%; height: 200%;
+      pointer-events: none;
+      z-index: -2;
+      background: 
+        radial-gradient(circle at 30% 40%, rgba(139, 92, 246, 0.25) 0%, transparent 40%),
+        radial-gradient(circle at 70% 60%, rgba(96, 165, 250, 0.2) 0%, transparent 40%),
+        radial-gradient(circle at 50% 20%, rgba(45, 212, 191, 0.15) 0%, transparent 35%);
+      filter: blur(80px);
+      animation: ambientDrift 30s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Spatial Mesh Overlay */
+    body::after {
+      content: "";
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      z-index: -1;
+      background-image: radial-gradient(rgba(255,255,255,0.15) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: radial-gradient(ellipse at 50% 50%, black 20%, transparent 80%);
+      -webkit-mask-image: radial-gradient(ellipse at 50% 50%, black 20%, transparent 80%);
+      opacity: 0.8;
+    }
+
+    @keyframes ambientDrift {
+      0% { transform: rotate(0deg) scale(1) translate(0, 0); }
+      50% { transform: rotate(3deg) scale(1.1) translate(3%, 2%); }
+      100% { transform: rotate(-2deg) scale(1.05) translate(-2%, -3%); }
     }
 
     .header {
@@ -65,8 +102,9 @@
     }
 
     .card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
+      background: rgba(30, 41, 59, 0.6);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 1rem;
       padding: 1.5rem;
       display: flex;
@@ -168,7 +206,7 @@
   
   <div id="content" class="grid-container" style="display: none;">
     
-    <!-- Left Column (Ratings) -->
+    
     <div class="col">
       <div class="card" style="margin-bottom: 1.5rem;">
         <div class="card-header">
@@ -211,7 +249,7 @@
       </div>
     </div>
 
-    <!-- Right Column (Text/Selects) -->
+    
     <div class="col">
       <div class="card" style="margin-bottom: 1.5rem;">
         <div class="card-header">
@@ -267,7 +305,7 @@
       }
 
       try {
-        const res = await fetch(`http://localhost:3000/feedback/${assessmentId}/${studentEmail}`);
+        const res = await fetch(`/feedback/${assessmentId}/${studentEmail}`);
         const data = await res.json();
 
         if (!data) {

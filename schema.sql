@@ -7,7 +7,7 @@ CREATE TABLE `admin_chat_messages` (
   PRIMARY KEY (`id`),
   KEY `session_id` (`session_id`),
   CONSTRAINT `admin_chat_messages_ibfk_1` FOREIGN KEY (`session_id`) REFERENCES `admin_chat_sessions` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=44 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `admin_chat_sessions` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -18,7 +18,7 @@ CREATE TABLE `admin_chat_sessions` (
   PRIMARY KEY (`id`),
   KEY `admin_email` (`admin_email`),
   CONSTRAINT `admin_chat_sessions_ibfk_1` FOREIGN KEY (`admin_email`) REFERENCES `admin_users` (`email`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `admin_users` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -28,7 +28,7 @@ CREATE TABLE `admin_users` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `assessments` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -42,7 +42,7 @@ CREATE TABLE `assessments` (
   `start_time` datetime DEFAULT NULL,
   `end_time` datetime DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=83 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=90 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `assigned_practices` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -57,8 +57,9 @@ CREATE TABLE `assigned_students` (
   `assessment_id` int(11) DEFAULT NULL,
   `student_email` varchar(150) DEFAULT NULL,
   `submitted` tinyint(1) DEFAULT 0,
+  `auto_submitted` tinyint(1) DEFAULT 0,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=97 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=106 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `exam_controls` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -80,7 +81,7 @@ CREATE TABLE `exam_controls` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `assessment_id` (`assessment_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=51 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=58 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `practice_questions` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -112,7 +113,7 @@ CREATE TABLE `proctoring_logs` (
   `file_path` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=293 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=324 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `questions` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -139,7 +140,7 @@ CREATE TABLE `questions` (
   KEY `assessment_id` (`assessment_id`),
   KEY `section_id` (`section_id`),
   CONSTRAINT `questions_ibfk_1` FOREIGN KEY (`assessment_id`) REFERENCES `assessments` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=149 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=191 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `sections` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -167,7 +168,7 @@ CREATE TABLE `student_feedback` (
   `platform_issues` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `student_results` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -175,12 +176,18 @@ CREATE TABLE `student_results` (
   `assessment_title` varchar(255) DEFAULT NULL,
   `student_email` varchar(255) NOT NULL,
   `score` int(11) DEFAULT 0,
+  `auto_submitted` tinyint(1) DEFAULT 0,
   `percentage` decimal(5,2) DEFAULT 0.00,
   `submitted_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `mcq_score` int(11) DEFAULT 0,
+  `coding_score` int(11) DEFAULT 0,
+  `mcq_attended` int(11) DEFAULT 0,
+  `coding_attended` int(11) DEFAULT 0,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_assessment_student` (`assessment_id`,`student_email`),
   KEY `assessment_id` (`assessment_id`),
   CONSTRAINT `student_results_ibfk_1` FOREIGN KEY (`assessment_id`) REFERENCES `assessments` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `users` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -193,5 +200,23 @@ CREATE TABLE `users` (
   `college_name` varchar(150) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `student_answers` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `assessment_id` int(11) NOT NULL,
+  `student_email` varchar(255) NOT NULL,
+  `question_id` int(11) NOT NULL,
+  `selected_option` varchar(255) DEFAULT NULL,
+  `code_submitted` text DEFAULT NULL,
+  `is_correct` tinyint(1) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_student_question` (`assessment_id`,`student_email`,`question_id`),
+  KEY `assessment_id` (`assessment_id`),
+  KEY `question_id` (`question_id`),
+  CONSTRAINT `fk_answers_assessment` FOREIGN KEY (`assessment_id`) REFERENCES `assessments` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_answers_question` FOREIGN KEY (`question_id`) REFERENCES `questions` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 

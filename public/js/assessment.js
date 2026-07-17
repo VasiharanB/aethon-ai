@@ -35,6 +35,8 @@ document.addEventListener("DOMContentLoaded", () => {
         end_time: item.end_time,
         total_time: item.total_time,
         submitted: item.submitted || 0,
+        started: item.started || 0,
+        resume_count: item.resume_count || 0,
         feedback_given: item.feedback_given > 0,
         show_result: item.show_result !== null ? item.show_result : 1,
         score: item.score || 0,
@@ -50,9 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  /* ==========================
-     STATUS
-  ========================== */
+  
   function getStatus(a) {
     const now = new Date();
     const start = new Date(a.start_time);
@@ -82,9 +82,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  /* ==========================
-     BUTTONS
-  ========================== */
+  
   function getButtons(a) {
     const status = getStatus(a);
 
@@ -93,6 +91,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (status === "Live") {
+      if (a.started === 1) {
+        if (a.resume_count >= 1) {
+          return `<button class="btn red" style="background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; cursor: not-allowed; width: 100%;" disabled>Resume Limit Reached</button>`;
+        }
+        return `<button class="btn orange" style="background: linear-gradient(135deg, #f97316, #ea580c); color: white; width: 100%;" onclick="startTest(${a.id}, '${a.test_type}')">Resume Test ↻</button>`;
+      }
       return `<button class="btn green" onclick="startTest(${a.id}, '${a.test_type}')">Start ${a.test_type === 'practice' ? 'Practice' : 'Test'} →</button>`;
     }
 
@@ -100,9 +104,9 @@ document.addEventListener("DOMContentLoaded", () => {
       return `<button class="btn gray" disabled>Missed</button>`;
     }
 
-    // Completed status
     
-    // Check if it's a practice
+    
+    
     if (a.test_type === "practice") {
       return `
         <button class="btn" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 20px; font-weight: 500; cursor: pointer; width: 100%;" onclick="startTest(${a.id}, 'practice')">Finished - Redo Practice ↺</button>
@@ -128,9 +132,7 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
   }
 
-  /* ==========================
-     CARD
-  ========================== */
+  
   function createCard(a) {
 
     const status = getStatus(a);
@@ -187,9 +189,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let sortOrder = "asc";
   const sortButtons = document.querySelectorAll(".sort button");
 
-  /* ==========================
-     RENDER
-  ========================== */
+  
   function renderCards() {
 
     let filtered = [...assessments];
@@ -217,7 +217,7 @@ document.addEventListener("DOMContentLoaded", () => {
       );
     }
 
-    // Sort
+    
     filtered.sort((a, b) => {
       let comparison = 0;
       if (currentSort === "Due Date") {
@@ -240,9 +240,7 @@ document.addEventListener("DOMContentLoaded", () => {
       filtered.map(createCard).join("");
   }
 
-  /* ==========================
-     EVENTS
-  ========================== */
+  
   if (searchInput) {
     searchInput.addEventListener("input", renderCards);
   }
@@ -298,9 +296,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 
-/* ==========================
-   SHOW DETAILS (FINAL)
-========================== */
+
 async function showDetails(id){
 
   try{
@@ -360,26 +356,43 @@ async function showDetails(id){
   }
 }
 
-/* ==========================
-   CLOSE DETAILS
-========================== */
+
 function closeDetails(){
   document
     .getElementById("detailsModal")
     .classList.remove("show");
 }
 
-/* ==========================
-   START TEST / PRACTICE
-========================== */
-function startTest(id, type = 'test') {
+
+async function startTest(id, type = 'test') {
   const currentEmail = localStorage.getItem("userEmail") || sessionStorage.getItem("userEmail") || "guest@student.com";
+  const currentName = localStorage.getItem("userName") || "Student";
 
   if (type === 'practice') {
-    // Redirect directly to the react app practice route with email
-    window.location.href = `http://localhost:5173/practice/${id}?email=${encodeURIComponent(currentEmail)}`;
+    window.location.href = `http://localhost:5173/practice/${id}?email=${encodeURIComponent(currentEmail)}&name=${encodeURIComponent(currentName)}`;
+    return;
+  }
+
+  const a = window.assessments ? window.assessments.find(item => item.id === id) : null;
+  if (a && a.started === 1) {
+    try {
+      const resumeRes = await fetch("/resume-assessment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assessment_id: id, student_email: currentEmail })
+      });
+      const resumeData = await resumeRes.json();
+      if (resumeData.success) {
+        window.location.href = `http://localhost:5173/test/${id}?email=${encodeURIComponent(currentEmail)}&name=${encodeURIComponent(currentName)}&resumed=true`;
+      } else {
+        alert(resumeData.error || "You have already resumed once. You cannot resume again.");
+        window.location.href = "submitted.html?id=" + id;
+      }
+    } catch (err) {
+      console.error("Error resuming assessment:", err);
+      alert("Something went wrong while resuming. Please try again.");
+    }
   } else {
-    // Normal test route through start.html
     window.location.href = "start.html?id=" + id;
   }
 }

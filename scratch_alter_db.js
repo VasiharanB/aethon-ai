@@ -10,7 +10,7 @@ db.connect(err => {
     if (err && !err.message.includes("Duplicate column")) console.error(err);
     console.log("Added assessment_title column");
     
-    // Update existing rows
+    
     db.query(`
       UPDATE student_results sr
       JOIN assessments a ON sr.assessment_id = a.id

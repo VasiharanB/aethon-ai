@@ -1,15 +1,172 @@
-// admin-overview.js - Logic for admin.html Overview dashboard
+let cachedAssessments = [];
 
 document.addEventListener("DOMContentLoaded", () => {
   fetchDashboardStats();
   fetchRecentViolations();
+  setupViewSwapping();
   
-  // Refresh every 30 seconds
   setInterval(() => {
     fetchDashboardStats();
     fetchRecentViolations();
   }, 30000);
 });
+
+function setupViewSwapping() {
+  const menuDashboard = document.getElementById("menu-dashboard");
+  const menuAssessments = document.getElementById("menu-assessments");
+  const toggleAssessments = document.getElementById("toggle-assessments");
+  const quickManageAssessments = document.getElementById("quick-manage-assessments");
+  const searchInput = document.getElementById("dashboard-assessments-search");
+
+  if (menuDashboard) {
+    menuDashboard.addEventListener("click", (e) => {
+      e.preventDefault();
+      showDashboardView();
+    });
+  }
+
+  if (menuAssessments) {
+    menuAssessments.addEventListener("click", (e) => {
+      e.preventDefault();
+      showAssessmentsView();
+    });
+  }
+
+  if (toggleAssessments) {
+    toggleAssessments.addEventListener("click", (e) => {
+      e.preventDefault();
+      showAssessmentsView();
+    });
+  }
+
+  if (quickManageAssessments) {
+    quickManageAssessments.addEventListener("click", (e) => {
+      e.preventDefault();
+      showAssessmentsView();
+    });
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener("input", () => {
+      searchAssessments(searchInput.value);
+    });
+  }
+}
+
+function showDashboardView() {
+  // Update sidebar active class
+  document.querySelectorAll(".sidebar-menu .menu-item").forEach(item => {
+    item.classList.remove("active");
+  });
+  const menuDashboard = document.getElementById("menu-dashboard");
+  if (menuDashboard) menuDashboard.classList.add("active");
+
+  // Update top pill toggle active class
+  const toggleAssessments = document.getElementById("toggle-assessments");
+  if (toggleAssessments) toggleAssessments.classList.remove("active");
+
+  // Update breadcrumb
+  const breadcrumb = document.getElementById("breadcrumb-title");
+  if (breadcrumb) breadcrumb.textContent = "Admin Overview";
+
+  // Swap containers
+  document.getElementById("dashboard-overview-view").style.display = "block";
+  document.getElementById("dashboard-assessments-view").style.display = "none";
+}
+
+function showAssessmentsView() {
+  // Update sidebar active class
+  document.querySelectorAll(".sidebar-menu .menu-item").forEach(item => {
+    item.classList.remove("active");
+  });
+  const menuAssessments = document.getElementById("menu-assessments");
+  if (menuAssessments) menuAssessments.classList.add("active");
+
+  // Update top pill toggle active class
+  const toggleAssessments = document.getElementById("toggle-assessments");
+  if (toggleAssessments) toggleAssessments.classList.add("active");
+
+  // Update breadcrumb
+  const breadcrumb = document.getElementById("breadcrumb-title");
+  if (breadcrumb) breadcrumb.textContent = "Assessments";
+
+  // Swap containers
+  document.getElementById("dashboard-overview-view").style.display = "none";
+  document.getElementById("dashboard-assessments-view").style.display = "block";
+
+  // Fetch and display assessments
+  fetchAssessments();
+}
+
+function fetchAssessments() {
+  const tbody = document.querySelector("#dashboard-assessments-table tbody");
+  if (tbody) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--gray-text); padding: 40px 0;">Loading assessments...</td></tr>`;
+  }
+
+  fetch("/admin/assessments-list")
+    .then(res => res.json())
+    .then(data => {
+      if (data.error) {
+        showErrorRow();
+        return;
+      }
+      cachedAssessments = data;
+      renderAssessments(data);
+    })
+    .catch(err => {
+      console.error("Error fetching assessments:", err);
+      showErrorRow();
+    });
+}
+
+function renderAssessments(items) {
+  const tbody = document.querySelector("#dashboard-assessments-table tbody");
+  if (!tbody) return;
+
+  if (items.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--gray-text); padding: 40px 0;">No assessments created yet.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = items.map(row => {
+    let badgeClass = "badge active";
+    if (row.status === "DRAFT") badgeClass = "badge draft";
+    if (row.status === "COMPLETED") badgeClass = "badge completed";
+    
+    return `
+      <tr>
+        <td>
+          <div style="display: flex; flex-direction: column;">
+            <span style="font-weight: 600; font-size: 15px;">${row.title}</span>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--gray-text); margin-top: 3px;">${row.code}</span>
+          </div>
+        </td>
+        <td style="color: var(--gray-text);">${row.category}</td>
+        <td><span class="${badgeClass}">${row.status}</span></td>
+        <td style="font-weight: 600;">${row.candidates} candidates</td>
+        <td style="color: var(--gray-text);">${row.duration}</td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function searchAssessments(query) {
+  const lowerQuery = query.toLowerCase();
+  const filtered = cachedAssessments.filter(item => 
+    item.title.toLowerCase().includes(lowerQuery) || 
+    item.code.toLowerCase().includes(lowerQuery) ||
+    item.category.toLowerCase().includes(lowerQuery)
+  );
+  renderAssessments(filtered);
+}
+
+function showErrorRow() {
+  const tbody = document.querySelector("#dashboard-assessments-table tbody");
+  if (tbody) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--danger); padding: 40px 0;">Failed to load assessments from database.</td></tr>`;
+  }
+}
 
 function fetchDashboardStats() {
   fetch("/admin/dashboard-stats")
@@ -17,20 +174,17 @@ function fetchDashboardStats() {
     .then(data => {
       if (data.error) return;
 
-      // Top row
       setEl("stat-total-students", data.total_students);
       setEl("stat-active-tests", data.active_tests);
       setEl("stat-practice-sets", data.practice_sets);
       setEl("stat-questions", data.total_questions);
       setEl("stat-flags", data.proctoring_flags);
 
-      // Second row
       setEl("stat-submissions", data.total_submissions);
       setEl("stat-avg-score", data.avg_score + "%");
       setEl("stat-feedback", data.total_feedback);
       setEl("stat-practices", data.practice_sets);
 
-      // Summary panel
       setEl("summary-tests", data.active_tests);
       setEl("summary-practices", data.practice_sets);
       setEl("summary-students", data.total_students);

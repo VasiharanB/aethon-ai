@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import Editor from "@monaco-editor/react";
-import "./coding.css";
 
 function CodingPage() {
   const { id } = useParams();
@@ -13,7 +12,7 @@ function CodingPage() {
   const [assessment, setAssessment] = useState(null);
   const [questions, setQuestions] = useState([]);
 
-  // 🔥 FETCH DATA FROM BACKEND
+  
 useEffect(() => {
   fetch(`http://localhost:3000/assessment-full/${id}`)
     .then(res => res.json())
@@ -21,7 +20,7 @@ useEffect(() => {
 
       console.log("API DATA:", data);
 
-      // 🔥 HANDLE ALL POSSIBLE FORMATS
+      
       let rawQuestions = [];
 
       if (typeof data.questions === "string") {
@@ -59,7 +58,7 @@ useEffect(() => {
 
 }, [id]);
 
-  // 🛑 LOADING STATE
+  
   if (!assessment || questions.length === 0) {
     return <h2 style={{ color: "white" }}>Loading...</h2>;
   }
@@ -81,7 +80,7 @@ print(solution())`
   return (
     <div className="container">
 
-      {/* HEADER */}
+      {}
       <div className="header">
         <h2>{assessment.title || "Assessment Page"}</h2>
         <div className="timer-center">00:30:00</div>
@@ -92,7 +91,7 @@ print(solution())`
 
       <div className="main">
 
-        {/* LEFT SIDEBAR */}
+        {}
         <div className="qnav">
           <p className="section-label">
             {current.section || "Section"}
@@ -112,7 +111,7 @@ print(solution())`
           ))}
         </div>
 
-        {/* 🔥 MCQ / APTITUDE */}
+        {}
         {current.section !== "Coding" ? (
           <div className="fullpage">
 
@@ -134,7 +133,7 @@ print(solution())`
           </div>
         ) : (
 
-          /* 💻 CODING VIEW */
+          
           <>
             <div className="left">
               <div className="tabs-container">

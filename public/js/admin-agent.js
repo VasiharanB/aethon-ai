@@ -1,4 +1,4 @@
-// admin-agent.js - Logic for Aethon Intelligence Agent
+
 
 let currentAgentSession = null;
 const adminEmail = localStorage.getItem("adminEmail") || sessionStorage.getItem("adminEmail") || "admin@aethon.edu";
@@ -23,6 +23,7 @@ function newChat() {
   document.getElementById("agent-messages").style.display = "none";
   document.getElementById("agent-messages").innerHTML = "";
   document.querySelectorAll(".history-item").forEach(el => el.classList.remove("active"));
+  document.querySelector(".agent-main").classList.remove("chat-active");
 }
 
 async function loadAgentSessions() {
@@ -50,6 +51,7 @@ async function loadSessionHistory(sessionId, elem) {
   if (elem) elem.classList.add("active");
 
   document.getElementById("agent-welcome").style.display = "none";
+  document.querySelector(".agent-main").classList.add("chat-active");
   const messagesContainer = document.getElementById("agent-messages");
   messagesContainer.style.display = "flex";
   messagesContainer.innerHTML = "<p style='text-align:center;color:#a1a1aa;'>Loading history...</p>";
@@ -88,6 +90,7 @@ async function sendAgentMessage() {
   input.value = "";
   
   document.getElementById("agent-welcome").style.display = "none";
+  document.querySelector(".agent-main").classList.add("chat-active");
   const messagesContainer = document.getElementById("agent-messages");
   messagesContainer.style.display = "flex";
 
@@ -117,7 +120,7 @@ async function sendAgentMessage() {
     } else {
       currentAgentSession = data.sessionId;
       appendMessage("assistant", data.response);
-      loadAgentSessions(); // Refresh history
+      loadAgentSessions(); 
     }
   } catch (err) {
     document.getElementById(loadingId).remove();
@@ -133,7 +136,7 @@ function appendMessage(role, content, parseHTML = true, id = null) {
   if (id) bubble.id = id;
 
   if (role === "assistant") {
-    // If it contains a table, wrap it and add export tools
+    
     if (content.includes("<table")) {
       const wrapperId = "table-wrap-" + Date.now();
       bubble.innerHTML = `
@@ -161,7 +164,13 @@ function scrollToBottom() {
   container.scrollTop = container.scrollHeight;
 }
 
-// EXPORT FUNCTIONS
+function confirmAgentAction(encodedSql) {
+  const input = document.getElementById("agent-input");
+  input.value = "EXECUTE_CONFIRMED_SQL::" + encodedSql;
+  sendAgentMessage();
+}
+
+
 function exportAgentTable(wrapperId, format) {
   const wrapper = document.getElementById(wrapperId);
   if (!wrapper) return;

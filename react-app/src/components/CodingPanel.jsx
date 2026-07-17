@@ -17,17 +17,20 @@ const CodingPanel = forwardRef(({
   addToast, 
   hasRun = false, 
   onRunCode, 
-  onSubmitQuestion 
+  onSubmitQuestion,
+  terminalLogs,
+  setTerminalLogs,
+  executionStats,
+  setExecutionStats,
+  isRunningTests,
+  setIsRunningTests,
+  isSubmittingQuestion,
+  setIsSubmittingQuestion
 }, ref) => {
   const [selectedLang, setSelectedLang] = useState("java");
   const [draftCode, setDraftCode] = useState("");
-  const [isRunningTests, setIsRunningTests] = useState(false);
-  const [isSubmittingQuestion, setIsSubmittingQuestion] = useState(false);
-  const [consoleTab, setConsoleTab] = useState("console");
-  const [executionStats, setExecutionStats] = useState(null);
-  const [terminalLogs, setTerminalLogs] = useState("Terminal ready. Click 'Run Code' to execute visible tests.");
 
-  // Default templates
+  
   const getTemplate = (lang, qTitle) => {
     switch (lang) {
       case "python":
@@ -54,74 +57,143 @@ const CodingPanel = forwardRef(({
 
   const handleEditorChange = (value) => {
     setDraftCode(value);
-    // Auto save draft to parent answers state
+    
     if (setAnswers && question) {
       setAnswers(prev => ({ ...prev, [question.id]: value }));
     }
   };
 
-  const runTests = () => {
+  const runTests = async () => {
     setIsRunningTests(true);
-    setConsoleTab("console");
     setTerminalLogs("Compiling source code...\nInitializing sandbox environment...\nRunning visible test cases...\n");
     setExecutionStats(null);
 
-    setTimeout(() => {
-      setIsRunningTests(false);
-      
-      let inputVal = question?.coding_input || "Default Input";
-      let expectedVal = question?.coding_output || "Default Output";
-      
-      setTerminalLogs(prev => 
-        prev + `\n[VISIBLE TEST CASE 1]\nInput: ${inputVal}\nExpected: ${expectedVal}\nActual: ${expectedVal}\nStatus: PASSED (0.02s)\n\n[RESULTS] 1/1 visible testcase passed successfully.`
-      );
-      
-      setExecutionStats({
-        memory: "8.4 MB",
-        time: "0.02s"
+    const isPractice = window.location.pathname.includes("/practice/");
+
+    try {
+      const res = await fetch("http://localhost:3000/run-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: draftCode,
+          question_id: question?.id,
+          language: selectedLang,
+          is_practice: isPractice
+        })
       });
+      const data = await res.json();
+      setIsRunningTests(false);
 
-      if (onRunCode) {
-        onRunCode();
+      if (data.terminalLogs) {
+        setTerminalLogs(data.terminalLogs);
+      }
+      if (data.stats) {
+        setExecutionStats(data.stats);
       }
 
-      if (addToast) {
-        addToast("Visible test cases executed successfully.", "info");
+      if (res.ok && data.success) {
+        if (onRunCode) onRunCode();
+        if (addToast) addToast("Testcases passed", "success");
+      } else {
+        if (addToast) addToast("Some testcases failed", "error");
       }
-    }, 1500);
+    } catch (err) {
+      console.error("Run tests failed", err);
+      setIsRunningTests(false);
+      setTerminalLogs(prev => prev + "\n[ERROR] Connection error to code execution sandbox.");
+      if (addToast) addToast("Network error running tests.", "error");
+    }
   };
 
-  const submitQuestion = () => {
+  const submitQuestion = async () => {
     setIsSubmittingQuestion(true);
-    setConsoleTab("console");
     setTerminalLogs("Compiling and packaging codebase...\nRunning comprehensive suite of hidden test cases...\n");
     setExecutionStats(null);
 
-    setTimeout(() => {
-      setIsSubmittingQuestion(false);
-      
-      // Simulating passing multiple hidden testcases
-      const passed = 10;
-      setTerminalLogs(prev => 
-        prev + `\nTestcase 1: PASSED (0.01s)\nTestcase 2: PASSED (0.01s)\nTestcase 3: PASSED (0.02s)\nTestcase 4: PASSED (0.01s)\nTestcase 5: PASSED (0.02s)\nTestcase 6: PASSED (0.01s)\nTestcase 7: PASSED (0.02s)\nTestcase 8: PASSED (0.03s)\nTestcase 9: PASSED (0.01s)\nTestcase 10: PASSED (0.01s)\n\n[HIDDEN RESULTS] ${passed}/${passed} test cases passed.\n[SUCCESS] Code verified and successfully saved to assessment records.`
-      );
-      
-      setExecutionStats({
-        memory: "14.2 MB",
-        time: "0.04s"
+    const isPractice = window.location.pathname.includes("/practice/");
+    const urlParams = new URLSearchParams(window.location.search);
+    const userEmail = urlParams.get("email") || "guest@student.com";
+    const pathParts = window.location.pathname.split("/");
+    const idFromPath = pathParts[pathParts.length - 1];
+
+    if (isPractice) {
+      try {
+        const res = await fetch("http://localhost:3000/run-code", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            code: draftCode,
+            question_id: question?.id,
+            language: selectedLang,
+            is_practice: true
+          })
+        });
+        const data = await res.json();
+        setIsSubmittingQuestion(false);
+
+        if (data.terminalLogs) {
+          setTerminalLogs(data.terminalLogs.replace("[RESULTS]", "[SUBMIT RESULTS]"));
+        }
+        if (data.stats) {
+          setExecutionStats(data.stats);
+        }
+
+        if (res.ok && data.success) {
+          if (onSubmitQuestion) onSubmitQuestion(draftCode, selectedLang);
+          if (addToast) addToast("Practice question submitted successfully!", "success");
+        } else {
+          if (addToast) addToast("Code logic check failed", "error");
+        }
+      } catch (err) {
+        console.error("Practice submit failed", err);
+        setIsSubmittingQuestion(false);
+        setTerminalLogs(prev => prev + "\n[ERROR] Connection error to sandbox.");
+      }
+      return;
+    }
+
+    try {
+      const res = await fetch("http://localhost:3000/save-coding-answer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          assessment_id: idFromPath,
+          student_email: userEmail,
+          question_id: question?.id,
+          code_submitted: draftCode,
+          language: selectedLang
+        })
       });
+      const data = await res.json();
+      setIsSubmittingQuestion(false);
 
-      if (onSubmitQuestion) {
-        onSubmitQuestion();
+      if (data.terminalLogs) {
+        setTerminalLogs(data.terminalLogs);
+      }
+      if (data.stats) {
+        setExecutionStats(data.stats);
       }
 
-      if (addToast) {
-        addToast("Question submitted and saved to database!", "success");
+      if (res.ok && data.success) {
+        if (onSubmitQuestion) {
+          onSubmitQuestion(draftCode, selectedLang);
+        }
+        if (addToast) addToast("Code submitted successfully", "success");
+      } else {
+        if (onSubmitQuestion) {
+          onSubmitQuestion(draftCode, selectedLang);
+        }
+        if (addToast) addToast("Code logic check failed", "error");
       }
-    }, 1800);
+    } catch (err) {
+      console.error("Submit question failed", err);
+      setIsSubmittingQuestion(false);
+      setTerminalLogs(prev => prev + "\n[ERROR] Connection error to sandbox.");
+      if (addToast) addToast("Network error submitting code.", "error");
+    }
   };
 
-  // Expose runTests and submitQuestion to parent page via ref
+  
   useImperativeHandle(ref, () => ({
     runTests,
     submitQuestion,
@@ -132,12 +204,9 @@ const CodingPanel = forwardRef(({
     }
   }));
 
-  const visibleCase = parseTestCase(question?.visible_testcases);
-  const hiddenCase = parseTestCase(question?.hidden_testcases);
-
   return (
     <div className="coding-wrapper">
-      {/* EDITOR HEADER */}
+      {}
       <div className="editor-header">
         <div className="lang-tabs">
           {["java", "python", "cpp", "javascript"].map((lang) => (
@@ -151,7 +220,65 @@ const CodingPanel = forwardRef(({
           ))}
         </div>
 
-        <div className="editor-header-options">
+        <div className="editor-header-options" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          {}
+          <button 
+            className="nav-btn-run" 
+            onClick={runTests}
+            disabled={isRunningTests || isSubmittingQuestion}
+            style={{ 
+              height: "28px", 
+              padding: "0 10px", 
+              borderRadius: "6px", 
+              fontSize: "12px", 
+              fontWeight: "600", 
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "4px",
+              background: "rgba(255, 255, 255, 0.05)",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              color: "var(--white)"
+            }}
+          >
+            {isRunningTests ? (
+              <i className="ri-loader-4-line ri-spin" style={{ color: "var(--green)" }}></i>
+            ) : (
+              <i className="ri-play-line" style={{ color: "var(--green)" }}></i>
+            )}
+            <span>Run Code</span>
+          </button>
+
+          {}
+          <button 
+            className="nav-btn-submit" 
+            onClick={submitQuestion}
+            disabled={isRunningTests || isSubmittingQuestion}
+            style={{ 
+              height: "28px", 
+              padding: "0 10px", 
+              borderRadius: "6px", 
+              fontSize: "12px", 
+              fontWeight: "600", 
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              background: "rgba(16, 185, 129, 0.1)",
+              border: "1px solid rgba(16, 185, 129, 0.3)",
+              color: "#10b981"
+            }}
+          >
+            {isSubmittingQuestion ? (
+              <i className="ri-loader-4-line ri-spin" style={{ color: "#10b981" }}></i>
+            ) : (
+              <i className="ri-upload-cloud-line" style={{ color: "#10b981", fontSize: "14px" }}></i>
+            )}
+            <span>Submit</span>
+          </button>
+
+          <span style={{ width: "1px", height: "16px", background: "rgba(255,255,255,0.1)", margin: "0 4px" }}></span>
+
           <button
             className="editor-opt-btn"
             title="Reset code template"
@@ -172,7 +299,7 @@ const CodingPanel = forwardRef(({
         </div>
       </div>
 
-      {/* MONACO EDITOR */}
+      {}
       <div className="editor-container">
         <Editor
           height="100%"
@@ -199,135 +326,7 @@ const CodingPanel = forwardRef(({
         />
       </div>
 
-      {/* RUN / SUBMIT QUESTION WORKSPACE CONTROLS */}
-      <div className="editor-footer-controls" style={{ 
-        display: "flex", 
-        justifyContent: "flex-end", 
-        alignItems: "center", 
-        gap: "12px", 
-        padding: "10px 16px", 
-        background: "#0f1016", 
-        borderBottom: "1px solid var(--border-color)",
-        borderTop: "1px solid var(--border-color)"
-      }}>
-        <button 
-          className="nav-btn-run" 
-          onClick={runTests}
-          disabled={isRunningTests || isSubmittingQuestion}
-          style={{ height: "36px", padding: "0 16px", borderRadius: "8px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}
-        >
-          {isRunningTests ? (
-            <i className="ri-loader-4-line ri-spin" style={{ color: "var(--green)" }}></i>
-          ) : (
-            <i className="ri-play-line" style={{ color: "var(--green)" }}></i>
-          )}
-          <span>Run Code</span>
-        </button>
 
-        {hasRun && (
-          <button 
-            className="nav-btn-submit" 
-            onClick={submitQuestion}
-            disabled={isRunningTests || isSubmittingQuestion}
-            style={{ 
-              height: "36px", 
-              padding: "0 16px", 
-              borderRadius: "8px", 
-              fontSize: "13px", 
-              fontWeight: "700", 
-              cursor: "pointer",
-              background: "linear-gradient(135deg, var(--green), #059669)",
-              boxShadow: "0 4px 12px rgba(16, 185, 129, 0.25)"
-            }}
-          >
-            {isSubmittingQuestion ? (
-              <i className="ri-loader-4-line ri-spin" style={{ color: "white" }}></i>
-            ) : (
-              <i className="ri-checkbox-circle-line"></i>
-            )}
-            <span>Submit Question</span>
-          </button>
-        )}
-      </div>
-
-      {/* CONSOLE PANEL */}
-      <div className="console-panel">
-        <div className="console-header">
-          <div className="console-tabs">
-            <button 
-              className={`console-tab ${consoleTab === "console" ? "active" : ""}`}
-              onClick={() => setConsoleTab("console")}
-            >
-              Console Logs
-            </button>
-            <button 
-              className={`console-tab ${consoleTab === "results" ? "active" : ""}`}
-              onClick={() => setConsoleTab("results")}
-            >
-              Test Cases
-            </button>
-          </div>
-
-          {executionStats && (
-            <div className="console-meta">
-              <span>Memory: {executionStats.memory}</span>
-              <span>Exec Time: {executionStats.time}</span>
-            </div>
-          )}
-        </div>
-
-        <div className="console-body">
-          {isRunningTests || isSubmittingQuestion ? (
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <i className="ri-loader-4-line ri-spin" style={{ color: "var(--primary-light)" }}></i>
-              <span>Executing test cases on sandbox compiler...</span>
-            </div>
-          ) : consoleTab === "results" ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-              {/* Testcase tabs inside body */}
-              <div style={{ display: "flex", gap: "10px", borderBottom: "1px solid rgba(255, 255, 255, 0.05)", paddingBottom: "10px" }}>
-                <span style={{ fontSize: "12px", fontWeight: "700", color: "var(--primary-light)" }}>Case 1 (Visible Case):</span>
-                {hasRun ? (
-                  <span style={{ fontSize: "11px", color: "var(--green)", fontWeight: "600" }}>✓ Passed</span>
-                ) : (
-                  <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>Not run yet</span>
-                )}
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <div style={{ background: "rgba(255, 255, 255, 0.03)", padding: "10px 14px", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
-                  <div style={{ fontSize: "11px", color: "var(--text-muted)", fontWeight: "700", marginBottom: "4px" }}>Input</div>
-                  <pre style={{ margin: 0, fontFamily: "inherit", fontSize: "12.5px" }}>{visibleCase.input}</pre>
-                </div>
-                <div style={{ background: "rgba(255, 255, 255, 0.03)", padding: "10px 14px", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
-                  <div style={{ fontSize: "11px", color: "var(--text-muted)", fontWeight: "700", marginBottom: "4px" }}>Expected Output</div>
-                  <pre style={{ margin: 0, fontFamily: "inherit", fontSize: "12.5px", color: "var(--green)" }}>{visibleCase.output}</pre>
-                </div>
-              </div>
-
-              <div style={{ display: "flex", gap: "10px", borderBottom: "1px solid rgba(255, 255, 255, 0.05)", paddingBottom: "10px", marginTop: "10px" }}>
-                <span style={{ fontSize: "12px", fontWeight: "700", color: "var(--text-muted)" }}>Case 2 (Hidden Case):</span>
-                {executionStats && executionStats.memory === "14.2 MB" ? (
-                  <span style={{ fontSize: "11px", color: "var(--green)", fontWeight: "600" }}>✓ Passed (Submitted)</span>
-                ) : (
-                  <span style={{ fontSize: "11px", color: "var(--yellow)" }}>Locked (Evaluated on submission)</span>
-                )}
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <div style={{ background: "rgba(255, 255, 255, 0.03)", padding: "10px 14px", borderRadius: "8px", border: "1px solid var(--border-color)", opacity: 0.7 }}>
-                  <div style={{ fontSize: "11px", color: "var(--text-muted)", fontWeight: "700", marginBottom: "4px" }}>Input</div>
-                  <pre style={{ margin: 0, fontFamily: "inherit", fontSize: "12.5px" }}>{executionStats && executionStats.memory === "14.2 MB" ? hiddenCase.input : "••••••••"}</pre>
-                </div>
-                <div style={{ background: "rgba(255, 255, 255, 0.03)", padding: "10px 14px", borderRadius: "8px", border: "1px solid var(--border-color)", opacity: 0.7 }}>
-                  <div style={{ fontSize: "11px", color: "var(--text-muted)", fontWeight: "700", marginBottom: "4px" }}>Expected Output</div>
-                  <pre style={{ margin: 0, fontFamily: "inherit", fontSize: "12.5px", color: "var(--green)" }}>{executionStats && executionStats.memory === "14.2 MB" ? hiddenCase.output : "••••••••"}</pre>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <pre style={{ margin: 0, whiteSpace: "pre-wrap" }}>{terminalLogs}</pre>
-          )}
-        </div>
-      </div>
     </div>
   );
 });

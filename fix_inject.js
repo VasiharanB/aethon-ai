@@ -4,7 +4,7 @@ const path = require('path');
 const publicDir = path.join(__dirname, 'public');
 const adminHtml = fs.readFileSync(path.join(publicDir, 'admin.html'), 'utf8');
 
-// Extract the Overlay properly
+
 const startIdx = adminHtml.indexOf('<!-- AETHON INTELLIGENCE FULLSCREEN OVERLAY -->');
 const endIdx = adminHtml.indexOf('<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/');
 
@@ -22,7 +22,7 @@ for (const file of filesToUpdate) {
   let content = fs.readFileSync(filePath, 'utf8');
   let modified = false;
 
-  // Since the previous script inserted an empty <!-- AI AGENT OVERLAY -->, let's replace it
+  
   if (content.includes('<!-- AI AGENT OVERLAY -->') && !content.includes('agent-chat-container')) {
     content = content.replace(/<!-- AI AGENT OVERLAY -->[\s\S]*?(?=<script src="https:\/\/cdnjs\.cloudflare\.com)/, overlayHTML);
     modified = true;

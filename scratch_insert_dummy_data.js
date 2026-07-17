@@ -8,7 +8,7 @@ db.connect(err => {
 
   const email = "shameem123@gmail.com";
   
-  // 1. Insert a Mock Assessment
+  
   db.query(`INSERT INTO assessments (title, start_time, end_time, description, total_time) VALUES (?, NOW() - INTERVAL 1 DAY, NOW() + INTERVAL 2 DAY, ?, ?)`, 
   ["Full Stack Engineering Assessment", "A comprehensive test covering React and Node.js", 60], 
   (err, res) => {
@@ -16,7 +16,7 @@ db.connect(err => {
     const assessmentId = res.insertId;
     console.log("Created Assessment ID:", assessmentId);
 
-    // 2. Assign the assessment to shameem123@gmail.com and a few others
+    
     const assigned = [
       [assessmentId, email, 1],
       [assessmentId, "student2@gmail.com", 1],
@@ -28,7 +28,7 @@ db.connect(err => {
       if (err) { console.error(err); }
       console.log("Assigned students");
 
-      // 3. Create mock results for these students
+      
       const results = [
         [assessmentId, email, 85, 85.00],
         [assessmentId, "student2@gmail.com", 92, 92.00],
@@ -40,7 +40,7 @@ db.connect(err => {
          if (err) { console.error(err); }
          console.log("Inserted mock results");
 
-         // 4. Create some questions for the assessment so the percentage/analytics don't crash
+         
          const questions = [
             [assessmentId, "React", 0, "mcq", "React Hook", "Which hook?", "use", "use2", "use3", "useState", "useState", "Easy", 10],
             [assessmentId, "Node", 0, "mcq", "Node server", "Which framework?", "Express", "Flask", "Django", "Spring", "Express", "Easy", 10]

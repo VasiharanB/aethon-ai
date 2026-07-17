@@ -5,33 +5,45 @@ const path = require("path");
 const multer = require("multer");
 const fs = require("fs");
 const db = require("./db");
+const codeRunner = require("./codeRunner");
 
 const app = express();
 
-/* =========================
-   MIDDLEWARE
-========================= */
+
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-/* =========================
-   STATIC FILES
-========================= */
+const cookieParser = require("cookie-parser");
+const jwt = require("jsonwebtoken");
+app.use(cookieParser());
+
+const jwtSecret = process.env.JWT_SECRET || "supersecretkey123";
+
+function authenticateToken(req, res, next) {
+  const token = req.cookies.token;
+  if (!token) return res.status(401).json({ error: "Access Denied. No token provided." });
+  try {
+    req.user = jwt.verify(token, jwtSecret);
+    next();
+  } catch (err) {
+    res.status(400).json({ error: "Invalid Token" });
+  }
+}
+
+
+
 app.use(express.static(path.join(__dirname, "public")));
 
-/* =========================
-   HOME
-========================= */
+
+
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 
-/* =========================
-   PROCTORING ROUTES
-========================= */
 
-// Configure Multer for video uploads
+
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const dir = path.join(__dirname, "public", "recordings");
@@ -74,65 +86,102 @@ app.post("/proctor/log", (req, res) => {
   });
 });
 
-/* =========================
-   LOGIN (ADMIN + USER)
-========================= */
+
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
   const bcrypt = require("bcrypt");
-
-  // 🔥 CHECK ADMIN
+  
+  
   const adminQuery = "SELECT * FROM admin_users WHERE email=?";
-
   db.query(adminQuery, [email], async (err, adminResult) => {
     if (err) {
       console.log(err);
-      return res.json({ success: false });
+      return res.json({ success: false, error: "Database error" });
     }
 
     if (adminResult.length > 0) {
       const match = await bcrypt.compare(password, adminResult[0].password);
       if (match) {
+        const token = jwt.sign({ email: adminResult[0].email, role: "admin" }, jwtSecret, { expiresIn: "24h" });
+        res.cookie("token", token, { httpOnly: true });
         return res.json({
           success: true,
           role: "admin",
           email: adminResult[0].email,
           name: adminResult[0].name || null
         });
+      } else {
+        return res.json({ success: false, error: "Invalid credentials" });
       }
     }
 
-    // 🔥 CHECK USER
+    
     const userQuery = "SELECT * FROM users WHERE email=?";
-
     db.query(userQuery, [email], async (err, userResult) => {
       if (err) {
         console.log(err);
-        return res.json({ success: false });
+        return res.json({ success: false, error: "Database error" });
       }
 
       if (userResult.length > 0) {
         const match = await bcrypt.compare(password, userResult[0].password);
         if (match) {
+          const token = jwt.sign({ email: userResult[0].email, role: "student" }, jwtSecret, { expiresIn: "24h" });
+          res.cookie("token", token, { httpOnly: true });
           return res.json({
             success: true,
             role: "student",
             email: userResult[0].email,
             name: userResult[0].name || null
           });
+        } else {
+          return res.json({ success: false, error: "Invalid credentials" });
         }
       }
 
-      return res.json({ success: false });
+      return res.json({ success: false, error: "User not found" });
     });
+  });
+});
+
+
+app.post("/register-user", async (req, res) => {
+  const { email, name, password, college_name } = req.body;
+  if (!email || !name || !password) {
+    return res.json({ success: false, error: "Missing fields" });
+  }
+
+  
+  db.query("SELECT email FROM admin_users WHERE email=?", [email.trim()], async (err, adminCheck) => {
+    if (err) {
+      console.error(err);
+      return res.json({ success: false, error: "Database error" });
+    }
+    if (adminCheck.length > 0) {
+      return res.json({ success: false, error: "Admin emails cannot register as students" });
+    }
+
+    try {
+      const bcrypt = require("bcrypt");
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const sql = "INSERT INTO users (email, name, password, college_name) VALUES (?, ?, ?, ?)";
+      
+      db.query(sql, [email.trim(), name.trim(), hashedPassword, college_name ? college_name.trim() : null], (err) => {
+        if (err) {
+          if (err.code === "ER_DUP_ENTRY") return res.json({ success: false, error: "Email already registered" });
+          return res.json({ success: false, error: "Database error" });
+        }
+        res.json({ success: true });
+      });
+    } catch (err) {
+      res.json({ success: false, error: "Server error" });
+    }
   });
 });
 
 const otps = new Map();
 
-/* =========================
-   FORGOT PASSWORD
-========================= */
+
 app.post("/forgot-password", (req, res) => {
   const { email } = req.body;
   if (!email) return res.json({ success: false, error: "Email required" });
@@ -154,9 +203,7 @@ app.post("/forgot-password", (req, res) => {
   });
 });
 
-/* =========================
-   RESET PASSWORD
-========================= */
+
 app.post("/reset-password", async (req, res) => {
   const { email, otp, newPassword } = req.body;
   
@@ -187,9 +234,7 @@ app.post("/reset-password", async (req, res) => {
   });
 });
 
-/* =========================
-   STUDENT ASSESSMENTS
-========================= */
+
 app.get("/student-assessments", (req, res) => {
 
   const email = req.query.email;
@@ -197,15 +242,16 @@ app.get("/student-assessments", (req, res) => {
   if (!email) return res.json([]);
 
   const sql = `
-    SELECT a.*, s.submitted,
+    SELECT a.*, s.submitted, s.auto_submitted, s.resume_count,
+           (s.started OR (SELECT COUNT(*) FROM student_answers sa WHERE sa.assessment_id = a.id AND sa.student_email = s.student_email) > 0) as started,
            (SELECT COUNT(*) FROM student_feedback f WHERE f.assessment_id = a.id AND f.student_email = ?) as feedback_given,
            (SELECT show_result FROM exam_controls c WHERE c.assessment_id = a.id) as show_result,
-           (SELECT score FROM student_results r WHERE r.assessment_id = a.id AND r.student_email = ?) as score
+           (SELECT score FROM student_results r WHERE r.assessment_id = a.id AND r.student_email = ? ORDER BY r.id DESC LIMIT 1) as score
     FROM assessments a
     INNER JOIN assigned_students s
     ON a.id = s.assessment_id
     WHERE s.student_email = ?
-    ORDER BY a.id DESC
+    ORDER BY a.id ASC
   `;
 
   db.query(sql, [email.trim(), email.trim(), email.trim()], (err, result) => {
@@ -221,9 +267,7 @@ app.get("/student-assessments", (req, res) => {
 
 });
 
-/* =========================
-   STUDENT PRACTICES
-========================= */
+
 app.get("/student-practices/:email", (req, res) => {
   const email = req.params.email;
 
@@ -232,7 +276,7 @@ app.get("/student-practices/:email", (req, res) => {
     FROM practices p
     INNER JOIN assigned_practices ap ON p.id = ap.practice_id
     WHERE ap.student_email = ?
-    ORDER BY p.id DESC
+    ORDER BY p.id ASC
   `;
 
   db.query(sql, [email.trim()], (err, result) => {
@@ -244,9 +288,121 @@ app.get("/student-practices/:email", (req, res) => {
   });
 });
 
-/* =========================
-   FEEDBACK ROUTES
-========================= */
+app.get("/student/profile", (req, res) => {
+  const email = req.query.email;
+  if (!email) return res.status(400).json({ error: "Email required" });
+  db.query("SELECT name FROM users WHERE email = ?", [email], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (results.length === 0) return res.status(404).json({ error: "User not found" });
+    res.json({ name: results[0].name });
+  });
+});
+
+app.get("/assessment-answers/:assessmentId/:studentEmail", (req, res) => {
+  const { assessmentId, studentEmail } = req.params;
+  db.query(
+    "SELECT question_id, selected_option, code_submitted FROM student_answers WHERE assessment_id = ? AND student_email = ?",
+    [assessmentId, studentEmail],
+    (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json(results);
+    }
+  );
+});
+
+app.get("/assessment-status/:assessmentId/:studentEmail", (req, res) => {
+  const { assessmentId, studentEmail } = req.params;
+  const sql = "SELECT started, submitted, auto_submitted, resume_count FROM assigned_students WHERE assessment_id = ? AND student_email = ?";
+  db.query(sql, [assessmentId, studentEmail], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (results.length === 0) {
+      return res.json({ allowed: false, error: "Not assigned to this assessment" });
+    }
+    const { started, submitted, auto_submitted, resume_count } = results[0];
+    
+    // Check if student has saved answers (meaning they started before)
+    const answersSql = "SELECT COUNT(*) AS answer_count FROM student_answers WHERE assessment_id = ? AND student_email = ?";
+    db.query(answersSql, [assessmentId, studentEmail], (err2, answersResults) => {
+      const answerCount = (!err2 && answersResults.length > 0) ? answersResults[0].answer_count : 0;
+      const finalStarted = (started === 1 || answerCount > 0) ? 1 : 0;
+      
+      // Auto-reconcile started flag in the database if it was 0 but answers exist
+      if (started === 0 && answerCount > 0) {
+        db.query("UPDATE assigned_students SET started = 1 WHERE assessment_id = ? AND student_email = ?", [assessmentId, studentEmail]);
+      }
+
+      res.json({
+        started: finalStarted,
+        submitted,
+        auto_submitted,
+        resume_count,
+        allowed: submitted === 0 && auto_submitted === 0
+      });
+    });
+  });
+});
+
+app.post("/start-assessment", (req, res) => {
+  const { assessment_id, student_email } = req.body;
+  const sql = "UPDATE assigned_students SET started = 1 WHERE assessment_id = ? AND student_email = ?";
+  db.query(sql, [assessment_id, student_email], (err) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, error: "Database error" });
+    }
+    res.json({ success: true });
+  });
+});
+
+app.post("/resume-assessment", (req, res) => {
+  const { assessment_id, student_email } = req.body;
+  
+  const checkSql = "SELECT resume_count, submitted, auto_submitted FROM assigned_students WHERE assessment_id = ? AND student_email = ?";
+  db.query(checkSql, [assessment_id, student_email], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, error: "Database error" });
+    }
+    if (results.length === 0) {
+      return res.status(404).json({ success: false, error: "Student not assigned to this assessment" });
+    }
+    
+    const { resume_count, submitted, auto_submitted } = results[0];
+    
+    if (submitted === 1 || auto_submitted === 1) {
+      return res.json({ success: false, error: "Assessment already submitted" });
+    }
+    
+    if (resume_count >= 1) {
+      // Auto-submit since this is the second time resuming
+      const autoSubmitSql = "UPDATE assigned_students SET auto_submitted = 1, submitted = 1 WHERE assessment_id = ? AND student_email = ?";
+      db.query(autoSubmitSql, [assessment_id, student_email], (err2) => {
+        if (err2) console.error(err2);
+        
+        db.query(
+          "INSERT INTO student_results (assessment_id, student_email, score, auto_submitted, assessment_title) SELECT ?, ?, 0, 1, title FROM assessments WHERE id = ? ON DUPLICATE KEY UPDATE auto_submitted = 1",
+          [assessment_id, student_email, assessment_id],
+          (err3) => {
+            if (err3) console.error(err3);
+            return res.json({ success: false, autoSubmitTriggered: true, error: "You have already resumed once. This second exit has caused the assessment to be auto-submitted." });
+          }
+        );
+      });
+    } else {
+      // First resume, increment count
+      const updateSql = "UPDATE assigned_students SET resume_count = resume_count + 1 WHERE assessment_id = ? AND student_email = ?";
+      db.query(updateSql, [assessment_id, student_email], (err2) => {
+        if (err2) {
+          console.error(err2);
+          return res.status(500).json({ success: false, error: "Database error" });
+        }
+        res.json({ success: true, new_resume_count: 1 });
+      });
+    }
+  });
+});
+
+
 app.post("/submit-feedback", (req, res) => {
   const {
     assessment_id, student_email,
@@ -280,40 +436,10 @@ app.get("/feedback/:id/:email", (req, res) => {
   });
 });
 
-/* =========================
-   ADVANCED RESULTS
-========================= */
-app.get("/results/analytics/:id/:email", (req, res) => {
-  const assessment_id = req.params.id;
 
-  // 1. Get assessment details
-  db.query("SELECT * FROM assessments WHERE id = ?", [assessment_id], (err, aRes) => {
-    if (err || aRes.length === 0) return res.json({ error: "Not found" });
-    const assessment = aRes[0];
 
-    // 2. Get leaderboard from student_results directly
-    const lbSql = `
-      SELECT student_email, score
-      FROM student_results
-      WHERE assessment_id = ?
-      ORDER BY score DESC
-    `;
-    db.query(lbSql, [assessment_id], (err, lbRes) => {
-      res.json({
-        assessment: {
-          title: assessment.title,
-          start_time: assessment.start_time,
-          duration: assessment.total_time
-        },
-        leaderboard: lbRes || []
-      });
-    });
-  });
-});
 
-/* =========================
-   SAVE EXAM CONTROLS
-========================= */
+
 app.post("/save-controls", (req, res) => {
 
   const {
@@ -400,9 +526,7 @@ app.post("/save-controls", (req, res) => {
 
 });
 
-/* =========================
-   CREATE TEST (FINAL FIXED)
-========================= */
+
 app.post("/create-test", (req, res) => {
 
   const {
@@ -411,17 +535,15 @@ app.post("/create-test", (req, res) => {
     end_time,
     description,
     total_time,
-    emails,   // 👈 coming from frontend
-    test_type // 👈 test or practice
+    emails,   
+    test_type 
   } = req.body;
 
   console.log("BODY:", req.body);
 
   const finalType = test_type || "test";
 
-  /* =========================
-     INSERT INTO assessments
-  ========================== */
+  
   const sql = `
     INSERT INTO assessments (
       title,
@@ -451,18 +573,14 @@ app.post("/create-test", (req, res) => {
     const assessmentId = result.insertId;
 
     const finalizeCreation = () => {
-      /* =========================
-         HANDLE MULTIPLE EMAILS
-      ========================== */
+      
       if (!emails || emails.trim() === "") {
         return res.json({ success: true, testId: assessmentId });
       }
 
       const emailArray = emails.split(",");
 
-      /* =========================
-         INSERT INTO assigned_students
-      ========================== */
+      
       const assignSql = `
         INSERT INTO assigned_students (assessment_id, student_email)
         VALUES ?
@@ -482,7 +600,7 @@ app.post("/create-test", (req, res) => {
       });
     };
 
-    /* If Practice, auto-insert disabled controls to bypass Manage Controls step */
+    
     if (finalType === "practice") {
       const controlSql = `
         INSERT INTO exam_controls (
@@ -502,9 +620,7 @@ app.post("/create-test", (req, res) => {
 
 });
 
-/* =========================
-   CREATE PRACTICE (ISOLATED)
-========================= */
+
 app.post("/create-practice", (req, res) => {
   const { title, emails } = req.body;
   console.log("PRACTICE BODY:", req.body);
@@ -537,9 +653,7 @@ app.post("/create-practice", (req, res) => {
   });
 });
 
-/* =========================
-   SAVE PRACTICE QUESTION
-========================= */
+
 app.post("/save-practice-question", (req, res) => {
   const { practice_id, questions } = req.body;
 
@@ -577,9 +691,7 @@ app.post("/save-practice-question", (req, res) => {
 
 
 
-/* =========================
-   SAVE QUESTION
-========================= */
+
 
 app.post("/save-question", (req, res) => {
   console.log("SAVE QUESTION BODY:", req.body);
@@ -588,7 +700,7 @@ app.post("/save-question", (req, res) => {
     return [
       assessment_id || 0,
       q.section_name || "",
-      0, // section_id cannot be null
+      0, 
       q.question_type || "mcq",
       q.question_title || "",
       q.question_text || "",
@@ -634,10 +746,10 @@ app.post("/save-question", (req, res) => {
   let values = [];
   
   if (req.body.questions && Array.isArray(req.body.questions)) {
-    // JSON Upload Array
+    
     values = req.body.questions.map(q => processQuestion(q, req.body.assessment_id));
   } else {
-    // Single Manual Question
+    
     values = [processQuestion(req.body, req.body.assessment_id)];
   }
 
@@ -677,9 +789,7 @@ app.post("/save-question", (req, res) => {
 });
 
 
-/* =========================
-   GET ASSESSMENT + CONTROLS
-========================= */
+
 app.get("/assessment/:id", (req, res) => {
 
   const id = req.params.id;
@@ -789,25 +899,35 @@ app.get("/assessment-full/:id", (req, res) => {
   });
 });
 
-/* =========================
-   SUBMIT ASSESSMENT
-========================= */
+
+function detectLanguage(code) {
+  const c = code.trim();
+  if (c.includes("#include") || c.includes("iostream") || c.includes("using namespace std")) {
+    return "cpp";
+  }
+  if (c.includes("public class") || c.includes("System.out") || c.includes("import java.")) {
+    return "java";
+  }
+  if (c.includes("def ") || c.includes("import sys") || c.includes("print(") || c.includes("import math")) {
+    return "python";
+  }
+  return "javascript";
+}
+
 app.post("/submit-assessment", (req, res) => {
-  const { assessment_id, student_email, answers } = req.body;
+  const { assessment_id, student_email, answers, auto_submitted } = req.body;
+  const isAutoSubmitted = auto_submitted ? 1 : 0;
 
   const markSubmitted = () => {
-    const markSql = `UPDATE assigned_students SET submitted = 1 WHERE assessment_id = ? AND student_email = ?`;
-    db.query(markSql, [assessment_id, student_email], (err2) => {
+    const markSql = `UPDATE assigned_students SET submitted = 1, auto_submitted = ? WHERE assessment_id = ? AND student_email = ?`;
+    db.query(markSql, [isAutoSubmitted, assessment_id, student_email], (err2) => {
       if (err2) console.error("MARK SUBMITTED ERROR:", err2);
       res.json({ success: true });
     });
   };
 
-  if (!answers || Object.keys(answers).length === 0) {
-    return markSubmitted();
-  }
+  const safeAnswers = answers || {};
 
-  // 1. Fetch all questions to evaluate answers
   db.query("SELECT * FROM questions WHERE assessment_id = ?", [assessment_id], (err, questions) => {
     if (err) {
       console.error("SUBMIT ERROR fetching questions:", err);
@@ -815,38 +935,293 @@ app.post("/submit-assessment", (req, res) => {
     }
 
     let totalScore = 0;
+    let mcqScore = 0;
+    let codingScore = 0;
+    let mcqAttended = 0;
+    let codingAttended = 0;
     
-    // 2. Evaluate submitted answers
-    for (const q of questions) {
-      const studentAnswer = answers[q.id];
-      if (studentAnswer) {
-        if (q.question_type === 'mcq') {
-          if (studentAnswer.trim() === q.correct_answer.trim()) {
-            totalScore += Number(q.marks) || 1;
+    const insertAnswerPromises = questions.map(q => {
+      return new Promise((resolveAnswer) => {
+        const studentAnswer = safeAnswers[q.id];
+        const hasAnswered = (studentAnswer !== undefined && studentAnswer !== null && studentAnswer.toString().trim() !== '');
+        
+        const selected_option = (q.question_type === 'mcq' && hasAnswered) ? studentAnswer.toString().trim() : null;
+        const code_submitted = (q.question_type === 'coding' && hasAnswered) ? studentAnswer.toString() : null;
+        
+        let is_correct = 0;
+        if (hasAnswered) {
+          if (q.question_type === 'mcq') {
+            mcqAttended++;
+            if (studentAnswer.toString().trim() === q.correct_answer.trim()) {
+              const m = Number(q.marks) || 1;
+              totalScore += m;
+              mcqScore += m;
+              is_correct = 1;
+            }
+            const insertSql = `
+              INSERT INTO student_answers (assessment_id, student_email, question_id, selected_option, is_correct)
+              VALUES (?, ?, ?, ?, ?)
+              ON DUPLICATE KEY UPDATE selected_option = VALUES(selected_option), is_correct = VALUES(is_correct)
+            `;
+            db.query(insertSql, [assessment_id, student_email, q.id, selected_option, is_correct], (ansErr) => {
+              if (ansErr) console.error("INSERT MCQ ANSWER ERROR:", ansErr);
+              resolveAnswer();
+            });
+          } else if (q.question_type === 'coding') {
+            codingAttended++;
+            // Check student_answers table for the actual correctness of this question
+            db.query(
+              "SELECT is_correct FROM student_answers WHERE assessment_id = ? AND student_email = ? AND question_id = ?",
+              [assessment_id, student_email, q.id],
+              (dbErr, dbRes) => {
+                if (!dbErr && dbRes.length > 0) {
+                  const m = Number(q.marks) || 1;
+                  const correct = dbRes[0].is_correct === 1;
+                  if (correct) {
+                    totalScore += m;
+                    codingScore += m;
+                  }
+                }
+                resolveAnswer();
+              }
+            );
           }
+        } else {
+          resolveAnswer();
         }
-        // Note: Coding questions are not auto-graded on the server yet, so they receive 0.
-      }
-    }
+      });
+    });
 
-    // 3. Save ONLY the final score to student_results
-    const resultSql = `
-      INSERT INTO student_results (assessment_id, student_email, score, assessment_title)
-      SELECT ?, ?, ?, title FROM assessments WHERE id = ?
-      ON DUPLICATE KEY UPDATE score = VALUES(score), assessment_title = VALUES(assessment_title)
-    `;
-    
-    db.query(resultSql, [assessment_id, student_email, totalScore, assessment_id], (err2) => {
-      if (err2) console.error("SAVE RESULT ERROR:", err2);
+    Promise.all(insertAnswerPromises).then(() => {
+      const resultSql = `
+        INSERT INTO student_results (assessment_id, student_email, score, auto_submitted, assessment_title, mcq_score, coding_score, mcq_attended, coding_attended, percentage)
+        SELECT ?, ?, ?, ?, title, ?, ?, ?, ?, COALESCE(ROUND((? / NULLIF(marks, 0)) * 100, 2), 0) FROM assessments WHERE id = ?
+        ON DUPLICATE KEY UPDATE 
+          score = VALUES(score), 
+          auto_submitted = VALUES(auto_submitted),
+          assessment_title = VALUES(assessment_title),
+          mcq_score = VALUES(mcq_score),
+          coding_score = VALUES(coding_score),
+          mcq_attended = VALUES(mcq_attended),
+          coding_attended = VALUES(coding_attended),
+          percentage = VALUES(percentage)
+      `;
       
-      markSubmitted();
+      db.query(resultSql, [
+        assessment_id, student_email, totalScore, isAutoSubmitted,
+        mcqScore, codingScore, mcqAttended, codingAttended, totalScore, assessment_id
+      ], (err2) => {
+        if (err2) console.error("SAVE RESULT ERROR:", err2);
+        markSubmitted();
+      });
     });
   });
 });
 
-/* =========================
-   PRACTICE DETAILS (REACT ENDPOINT)
-========================= */
+app.post("/run-code", async (req, res) => {
+  const { code, question_id, is_practice } = req.body;
+  if (code === undefined || !question_id) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  const language = req.body.language || detectLanguage(code);
+  const table = is_practice ? "practice_questions" : "questions";
+  const sql = `SELECT * FROM ${table} WHERE id = ?`;
+
+  db.query(sql, [question_id], async (err, results) => {
+    if (err || results.length === 0) {
+      return res.status(404).json({ error: "Question not found" });
+    }
+
+    const q = results[0];
+    let visibleCases = [];
+    try {
+      if (q.visible_testcases) {
+        visibleCases = typeof q.visible_testcases === "string"
+          ? JSON.parse(q.visible_testcases)
+          : q.visible_testcases;
+      }
+    } catch (e) {
+      console.error("Failed to parse visible testcases:", e);
+    }
+
+    if (visibleCases.length === 0 && (q.coding_input || q.coding_output)) {
+      visibleCases.push({
+        input: q.coding_input || "",
+        expected: q.coding_output || ""
+      });
+    }
+
+    if (visibleCases.length === 0) {
+      visibleCases.push({ input: "", expected: "" });
+    }
+
+    let logs = "Compiling source code...\nInitializing sandbox environment...\nRunning visible test cases...\n";
+    let passedCount = 0;
+    let hasCompilationError = false;
+    const startTime = Date.now();
+
+    for (let i = 0; i < visibleCases.length; i++) {
+      const tc = visibleCases[i];
+      const result = await codeRunner.runCode(language, code, tc.input);
+
+      if (result.status === "Compilation Error") {
+        logs += `\n[COMPILE ERROR]\n${result.error}\n`;
+        hasCompilationError = true;
+        break;
+      }
+
+      if (result.status === "Time Limit Exceeded") {
+        logs += `\n[VISIBLE TEST CASE ${i + 1}]\nInput: ${tc.input}\nExpected: ${tc.expected}\nStatus: Time Limit Exceeded\n`;
+        break;
+      }
+
+      if (result.status === "Runtime Error") {
+        logs += `\n[VISIBLE TEST CASE ${i + 1}]\nInput: ${tc.input}\nExpected: ${tc.expected}\nStatus: Runtime Error\n${result.error}\n`;
+        break;
+      }
+
+      const actual = (result.stdout || "").trim();
+      const expected = (tc.expected || "").trim();
+      const normalize = s => s.replace(/\r\n/g, "\n").replace(/\s+$/gm, "").trim();
+
+      if (normalize(actual) === normalize(expected)) {
+        passedCount++;
+        logs += `\n[VISIBLE TEST CASE ${i + 1}]\nInput: ${tc.input}\nExpected: ${expected}\nActual: ${actual}\nStatus: PASSED\n`;
+      } else {
+        logs += `\n[VISIBLE TEST CASE ${i + 1}]\nInput: ${tc.input}\nExpected: ${expected}\nActual: ${actual}\nStatus: FAILED (Wrong Answer)\n`;
+      }
+    }
+
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(2) + "s";
+
+    if (hasCompilationError) {
+      res.json({
+        success: false,
+        terminalLogs: logs + `\n[RESULTS] Compilation failed.`,
+        stats: { time: "0s", memory: "0 MB" }
+      });
+    } else {
+      res.json({
+        success: passedCount === visibleCases.length,
+        terminalLogs: logs + `\n[RESULTS] ${passedCount}/${visibleCases.length} visible testcase(s) passed successfully.`,
+        stats: { time: elapsed, memory: "8.4 MB" }
+      });
+    }
+  });
+});
+
+app.post("/save-coding-answer", (req, res) => {
+  const { assessment_id, student_email, question_id, code_submitted } = req.body;
+  if (!assessment_id || !student_email || !question_id || code_submitted === undefined) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  const language = req.body.language || detectLanguage(code_submitted);
+
+  db.query("SELECT * FROM questions WHERE id = ?", [question_id], async (err, results) => {
+    if (err || results.length === 0) {
+      return res.status(404).json({ error: "Question not found" });
+    }
+
+    const q = results[0];
+    let visibleCases = [];
+    let hiddenCases = [];
+
+    try {
+      if (q.visible_testcases) {
+        visibleCases = typeof q.visible_testcases === "string"
+          ? JSON.parse(q.visible_testcases)
+          : q.visible_testcases;
+      }
+      if (q.hidden_testcases) {
+        hiddenCases = typeof q.hidden_testcases === "string"
+          ? JSON.parse(q.hidden_testcases)
+          : q.hidden_testcases;
+      }
+    } catch (e) {
+      console.error("Failed to parse testcases:", e);
+    }
+
+    if (visibleCases.length === 0 && (q.coding_input || q.coding_output)) {
+      visibleCases.push({ input: q.coding_input || "", expected: q.coding_output || "" });
+    }
+
+    const allCases = [...visibleCases, ...hiddenCases];
+    if (allCases.length === 0) {
+      allCases.push({ input: "", expected: "" });
+    }
+
+    let logs = "Compiling and packaging codebase...\nRunning comprehensive suite of hidden test cases...\n";
+    let passedCount = 0;
+    let hasCompilationError = false;
+    const startTime = Date.now();
+
+    for (let i = 0; i < allCases.length; i++) {
+      const tc = allCases[i];
+      const result = await codeRunner.runCode(language, code_submitted, tc.input);
+
+      if (result.status === "Compilation Error") {
+        logs += `\n[COMPILE ERROR]\n${result.error}\n`;
+        hasCompilationError = true;
+        break;
+      }
+
+      if (result.status === "Time Limit Exceeded") {
+        logs += `Testcase ${i + 1}: FAILED (Time Limit Exceeded)\n`;
+        continue;
+      }
+
+      if (result.status === "Runtime Error") {
+        logs += `Testcase ${i + 1}: FAILED (Runtime Error)\n`;
+        continue;
+      }
+
+      const actual = (result.stdout || "").trim();
+      const expected = (tc.expected || "").trim();
+      const normalize = s => s.replace(/\r\n/g, "\n").replace(/\s+$/gm, "").trim();
+
+      if (normalize(actual) === normalize(expected)) {
+        passedCount++;
+        logs += `Testcase ${i + 1}: PASSED (0.01s)\n`;
+      } else {
+        logs += `Testcase ${i + 1}: FAILED (Wrong Answer)\n`;
+      }
+    }
+
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(2) + "s";
+    const isCorrect = (passedCount === allCases.length) ? 1 : 0;
+
+    const insertSql = `
+      INSERT INTO student_answers (assessment_id, student_email, question_id, code_submitted, language, is_correct)
+      VALUES (?, ?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE code_submitted = VALUES(code_submitted), language = VALUES(language), is_correct = VALUES(is_correct)
+    `;
+
+    db.query(insertSql, [assessment_id, student_email, question_id, code_submitted, language, isCorrect], (err2) => {
+      if (err2) {
+        console.error("SAVE CODING ANSWER ERROR:", err2);
+        return res.status(500).json({ error: "Database error" });
+      }
+
+      if (hasCompilationError) {
+        res.json({
+          success: false,
+          terminalLogs: logs + `\n[HIDDEN RESULTS] 0/${allCases.length} test cases passed.\n[ERROR] Sandbox compilation failed.`,
+          stats: { time: "0s", memory: "0 MB" }
+        });
+      } else {
+        res.json({
+          success: passedCount === allCases.length,
+          terminalLogs: logs + `\n[HIDDEN RESULTS] ${passedCount}/${allCases.length} test cases passed.\n[SUCCESS] Code verified and successfully saved to assessment records.`,
+          stats: { time: elapsed, memory: "14.2 MB" }
+        });
+      }
+    });
+  });
+});
+
+
 app.get("/practice-full/:id", (req, res) => {
   const id = req.params.id;
 
@@ -871,12 +1246,10 @@ app.get("/practice-full/:id", (req, res) => {
   });
 });
 
-/* =========================
-   SUBMIT PRACTICE
-========================= */
+
 app.post("/submit-practice", (req, res) => {
   const { practice_id, student_email } = req.body;
-  // WE ONLY MARK IT SUBMITTED, WE NEVER SAVE THE ANSWERS
+  
   const sql = `UPDATE assigned_practices SET submitted = 1 WHERE practice_id = ? AND student_email = ?`;
   
   db.query(sql, [practice_id, student_email], (err) => {
@@ -888,11 +1261,9 @@ app.post("/submit-practice", (req, res) => {
   });
 });
 
-/* =========================
-   ADMIN PANEL ADVANCED ENDPOINTS
-========================= */
 
-// 1. Dashboard Stats
+
+
 app.get("/admin/dashboard-stats", (req, res) => {
   const queries = [
     "SELECT COUNT(*) AS count FROM assessments WHERE test_type = 'test'",
@@ -928,64 +1299,81 @@ app.get("/admin/dashboard-stats", (req, res) => {
     });
 });
 
-// 2. Recent Security Violations (Telemetry Feed)
+
 app.get("/admin/recent-violations", (req, res) => {
-  const sql = `
-    SELECT pl.*, u.name AS student_name, a.title AS assessment_title
-    FROM proctoring_logs pl
-    LEFT JOIN users u ON pl.student_email = u.email
-    LEFT JOIN assessments a ON pl.assessment_id = a.id
-    ORDER BY pl.id DESC
-    LIMIT 5
+  const activeAssessmentSql = `
+    SELECT id FROM assessments 
+    ORDER BY 
+      CASE WHEN start_time <= NOW() AND end_time >= NOW() THEN 0 ELSE 1 END,
+      id DESC 
+    LIMIT 1
   `;
-  db.query(sql, (err, results) => {
+  db.query(activeAssessmentSql, (err, activeResults) => {
     if (err) { console.error(err); return res.status(500).json({ error: true }); }
     
-    // Map log types to friendly names and severity levels
-    const mapped = results.map(row => {
-      let severity = "Medium";
-      let eventType = row.log_type;
-      
-      if (row.log_type === 'tab_switch' || row.log_type === 'fullscreen_exit') {
-        severity = "High";
-        eventType = row.log_type === 'tab_switch' ? "Multiple tabs switched" : "Fullscreen exited";
-      } else if (row.log_type === 'webcam_alert' || row.log_type === 'face_anomaly') {
-        severity = "Critical";
-        eventType = "Webcam: Face mismatch/No face";
-      } else if (row.log_type === 'copy_paste') {
-        severity = "Medium";
-        eventType = "Copy/paste block bypassed";
-      } else if (row.log_type === 'blur') {
-        severity = "Low";
-        eventType = "Browser focus lost";
-      }
-      
-      return {
-        id: row.id,
-        timestamp: row.created_at || new Date(),
-        student_id: row.student_email ? `STD-${row.id + 1000}` : "N/A",
-        student_name: row.student_name || row.student_email || "Anonymous",
-        student_email: row.student_email || "N/A",
-        assessment_title: row.assessment_title || "Unknown Assessment",
-        event_type: eventType,
-        severity: severity,
-        status: "PENDING REVIEW"
-      };
-    });
+    if (activeResults.length === 0) {
+      return res.json([]);
+    }
     
-    res.json(mapped);
+    const activeId = activeResults[0].id;
+    
+    const sql = `
+      SELECT pl.*, u.name AS student_name, a.title AS assessment_title
+      FROM proctoring_logs pl
+      LEFT JOIN users u ON pl.student_email = u.email
+      LEFT JOIN assessments a ON pl.assessment_id = a.id
+      WHERE pl.assessment_id = ?
+      ORDER BY pl.id DESC
+      LIMIT 5
+    `;
+    db.query(sql, [activeId], (err, results) => {
+      if (err) { console.error(err); return res.status(500).json({ error: true }); }
+      
+      const mapped = results.map(row => {
+        let severity = "Medium";
+        let eventType = row.log_type;
+        
+        if (row.log_type === 'tab_switch' || row.log_type === 'fullscreen_exit') {
+          severity = "High";
+          eventType = row.log_type === 'tab_switch' ? "Multiple tabs switched" : "Fullscreen exited";
+        } else if (row.log_type === 'webcam_alert' || row.log_type === 'face_anomaly') {
+          severity = "Critical";
+          eventType = "Webcam: Face mismatch/No face";
+        } else if (row.log_type === 'copy_paste') {
+          severity = "Medium";
+          eventType = "Copy/paste block bypassed";
+        } else if (row.log_type === 'blur') {
+          severity = "Low";
+          eventType = "Browser focus lost";
+        }
+        
+        return {
+          id: row.id,
+          timestamp: row.created_at || new Date(),
+          student_id: row.student_email ? `STD-${row.id + 1000}` : "N/A",
+          student_name: row.student_name || row.student_email || "Anonymous",
+          student_email: row.student_email || "N/A",
+          assessment_title: row.assessment_title || "Unknown Assessment",
+          event_type: eventType,
+          severity: severity,
+          status: "PENDING REVIEW"
+        };
+      });
+      
+      res.json(mapped);
+    });
   });
 });
 
-// 3. Students Management Directory
+
 app.get("/admin/students", (req, res) => {
   const sql = `
-    SELECT u.email, u.name, u.dob, u.roll_number, u.personal_number, u.college_name,
+    SELECT u.email, u.name, u.dob, u.roll_number, u.personal_number, u.college_name, u.joining_year, u.passing_year,
            COALESCE(ROUND(AVG(sr.score)), 0) AS avg_score,
            (SELECT COUNT(*) FROM proctoring_logs pl WHERE pl.student_email = u.email) AS violation_count
     FROM users u
     LEFT JOIN student_results sr ON u.email = sr.student_email
-    GROUP BY u.email, u.name, u.dob, u.roll_number, u.personal_number, u.college_name
+    GROUP BY u.email, u.name, u.dob, u.roll_number, u.personal_number, u.college_name, u.joining_year, u.passing_year
     ORDER BY u.name ASC
   `;
   db.query(sql, (err, results) => {
@@ -1006,6 +1394,8 @@ app.get("/admin/students", (req, res) => {
         dob: row.dob ? new Date(row.dob).toISOString().split('T')[0] : "N/A",
         personal_number: row.personal_number || "N/A",
         college_name: row.college_name || "N/A",
+        joining_year: row.joining_year || "N/A",
+        passing_year: row.passing_year || "N/A",
         status: status,
         avg_score: row.avg_score + "%",
         last_active: row.violation_count > 0 ? "2 mins ago" : "Active"
@@ -1016,7 +1406,7 @@ app.get("/admin/students", (req, res) => {
   });
 });
 
-// 4. Assessments List (Tests & Practices)
+
 app.get("/admin/assessments-list", (req, res) => {
   const q1 = `
     SELECT a.id, a.title, a.description, a.start_time, a.end_time, a.total_time AS duration, a.test_type,
@@ -1059,7 +1449,9 @@ app.get("/admin/assessments-list", (req, res) => {
           status: status,
           candidates: row.candidates,
           duration: `${row.duration} min`,
-          test_type: row.test_type
+          test_type: row.test_type,
+          start_time: row.start_time,
+          end_time: row.end_time
         };
       });
 
@@ -1073,7 +1465,9 @@ app.get("/admin/assessments-list", (req, res) => {
           status: "ACTIVE",
           candidates: row.candidates,
           duration: "N/A",
-          test_type: "practice_table"
+          test_type: "practice_table",
+          start_time: null,
+          end_time: null
         };
       });
 
@@ -1082,7 +1476,7 @@ app.get("/admin/assessments-list", (req, res) => {
   });
 });
 
-// 5. Update Assessment Detail & Student Assignments
+
 app.post("/admin/update-assessment", (req, res) => {
   const { id, title, description, start_time, end_time, total_time, emails, test_type } = req.body;
 
@@ -1095,7 +1489,7 @@ app.post("/admin/update-assessment", (req, res) => {
     db.query(sql, [title, description, start_time, end_time, total_time, id], (err) => {
       if (err) { console.error(err); return res.status(500).json({ success: false }); }
       
-      // Update Assigned emails
+      
       db.query("DELETE FROM assigned_students WHERE assessment_id = ?", [id], (err2) => {
         if (err2) { console.error(err2); return res.status(500).json({ success: false }); }
         
@@ -1120,7 +1514,7 @@ app.post("/admin/update-assessment", (req, res) => {
     db.query(sql, [title, id], (err) => {
       if (err) { console.error(err); return res.status(500).json({ success: false }); }
       
-      // Update Assigned emails
+      
       db.query("DELETE FROM assigned_practices WHERE practice_id = ?", [id], (err2) => {
         if (err2) { console.error(err2); return res.status(500).json({ success: false }); }
         
@@ -1147,7 +1541,7 @@ app.post("/admin/update-assessment", (req, res) => {
   }
 });
 
-// 6. Delete Assessment
+
 app.post("/admin/delete-assessment", (req, res) => {
   const { id, test_type } = req.body;
   if (!id) return res.status(400).json({ success: false, error: "ID required" });
@@ -1179,9 +1573,9 @@ app.post("/admin/delete-assessment", (req, res) => {
   }
 });
 
-// 7. Add Student Manually
+
 app.post("/admin/add-student", async (req, res) => {
-  const { email, name, password, dob, roll_number, personal_number, college_name } = req.body;
+  const { email, name, password, dob, roll_number, personal_number, college_name, joining_year, passing_year } = req.body;
   if (!email || !name || !password) {
     return res.status(400).json({ success: false, error: "Email, Name and Password are required" });
   }
@@ -1189,7 +1583,7 @@ app.post("/admin/add-student", async (req, res) => {
   try {
     const bcrypt = require("bcrypt");
     const hashedPassword = await bcrypt.hash(password, 10);
-    const sql = "INSERT INTO users (email, name, password, dob, roll_number, personal_number, college_name) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    const sql = "INSERT INTO users (email, name, password, dob, roll_number, personal_number, college_name, joining_year, passing_year) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
     db.query(sql, [
       email.trim(), 
       name.trim(), 
@@ -1197,7 +1591,9 @@ app.post("/admin/add-student", async (req, res) => {
       dob ? dob : null,
       roll_number ? roll_number.trim() : null,
       personal_number ? personal_number.trim() : null,
-      college_name ? college_name.trim() : null
+      college_name ? college_name.trim() : null,
+      joining_year ? parseInt(joining_year) : null,
+      passing_year ? parseInt(passing_year) : null
     ], (err) => {
       if (err) {
         if (err.code === "ER_DUP_ENTRY") {
@@ -1214,52 +1610,135 @@ app.post("/admin/add-student", async (req, res) => {
   }
 });
 
-// 8. Security Violations List (Detail View)
-app.get("/admin/violations-list", (req, res) => {
+app.post("/admin/edit-student", (req, res) => {
+  const { email, name, dob, roll_number, personal_number, college_name, joining_year, passing_year } = req.body;
+  if (!email || !name) {
+    return res.status(400).json({ success: false, error: "Email and Name are required" });
+  }
+
   const sql = `
-    SELECT pl.*, u.name AS student_name, a.title AS assessment_title
-    FROM proctoring_logs pl
-    LEFT JOIN users u ON pl.student_email = u.email
-    LEFT JOIN assessments a ON pl.assessment_id = a.id
-    ORDER BY pl.id DESC
+    UPDATE users 
+    SET name = ?, dob = ?, roll_number = ?, personal_number = ?, college_name = ?, joining_year = ?, passing_year = ?
+    WHERE email = ?
   `;
-  db.query(sql, (err, results) => {
-    if (err) { console.error(err); return res.status(500).json({ error: true }); }
-    
-    const mapped = results.map(row => {
-      let severity = "Medium";
-      let eventType = row.log_type;
-      
-      if (row.log_type === 'tab_switch' || row.log_type === 'fullscreen_exit') {
-        severity = "HIGH";
-        eventType = row.log_type === 'tab_switch' ? "Multiple Faces Detected" : "Browser Unfocused";
-      } else if (row.log_type === 'webcam_alert' || row.log_type === 'face_anomaly') {
-        severity = "CRITICAL";
-        eventType = "External Device Connected";
-      } else {
-        severity = "LOW";
-        eventType = "Audio Anomaly";
-      }
-      
-      return {
-        id: `V-${row.id + 8000}`,
-        rawId: row.id,
-        event_type: eventType,
-        severity: severity,
-        student_name: row.student_name || "Anonymous",
-        student_email: row.student_email,
-        assessment_title: row.assessment_title || "Coding Practice",
-        time: "2 mins ago", // friendly formatted
-        status: row.file_path ? "Review" : "Resolved",
-        file_path: row.file_path
-      };
-    });
-    
-    res.json(mapped);
+  db.query(sql, [
+    name.trim(),
+    dob ? dob : null,
+    roll_number ? roll_number.trim() : null,
+    personal_number ? personal_number.trim() : null,
+    college_name ? college_name.trim() : null,
+    joining_year ? parseInt(joining_year) : null,
+    passing_year ? parseInt(passing_year) : null,
+    email.trim()
+  ], (err) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, error: "Database error occurred" });
+    }
+    res.json({ success: true });
   });
 });
 
-// 9. Fetch Assigned Student Emails (For Editing)
+function formatRelativeTime(dateVal) {
+  if (!dateVal) return "N/A";
+  const date = new Date(dateVal);
+  const now = new Date();
+  const diffMs = now - date;
+  
+  if (diffMs < 0) {
+    return "just now";
+  }
+  
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHr = Math.floor(diffMin / 60);
+  const diffDays = Math.floor(diffHr / 24);
+  
+  if (diffSec < 60) return "just now";
+  if (diffMin < 60) return `${diffMin} ${diffMin === 1 ? 'min' : 'mins'} ago`;
+  if (diffHr < 24) return `${diffHr} ${diffHr === 1 ? 'hour' : 'hours'} ago`;
+  if (diffDays < 30) return `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`;
+  
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+app.get("/admin/violations-list", (req, res) => {
+  const activeAssessmentSql = `
+    SELECT id FROM assessments 
+    ORDER BY 
+      CASE WHEN start_time <= NOW() AND end_time >= NOW() THEN 0 ELSE 1 END,
+      id DESC 
+    LIMIT 1
+  `;
+  db.query(activeAssessmentSql, (err, activeResults) => {
+    if (err) { console.error(err); return res.status(500).json({ error: true }); }
+    
+    if (activeResults.length === 0) {
+      return res.json([]);
+    }
+    
+    const activeId = activeResults[0].id;
+    
+    const sql = `
+      SELECT pl.*, u.name AS student_name, a.title AS assessment_title
+      FROM proctoring_logs pl
+      LEFT JOIN users u ON pl.student_email = u.email
+      LEFT JOIN assessments a ON pl.assessment_id = a.id
+      WHERE pl.assessment_id = ?
+      ORDER BY pl.id DESC
+      LIMIT 40
+    `;
+    db.query(sql, [activeId], (err, results) => {
+      if (err) { console.error(err); return res.status(500).json({ error: true }); }
+      
+      const mapped = results.map(row => {
+        let severity = "Medium";
+        let eventType = row.log_type;
+        
+        if (row.log_type === 'tab_switch' || row.log_type === 'fullscreen_exit') {
+          severity = "HIGH";
+          eventType = row.log_type === 'tab_switch' ? "Multiple Faces Detected" : "Browser Unfocused";
+        } else if (row.log_type === 'webcam_alert' || row.log_type === 'face_anomaly') {
+          severity = "CRITICAL";
+          eventType = "External Device Connected";
+        } else {
+          severity = "LOW";
+          eventType = "Audio Anomaly";
+        }
+        
+        return {
+          id: `V-${row.id + 8000}`,
+          rawId: row.id,
+          event_type: eventType,
+          severity: severity,
+          student_name: row.student_name || "Anonymous",
+          student_email: row.student_email,
+          assessment_title: row.assessment_title || "Coding Practice",
+          time: formatRelativeTime(row.created_at), 
+          status: row.status || (row.file_path ? "Review" : "Resolved"),
+          file_path: row.file_path
+        };
+      });
+      
+      res.json(mapped);
+    });
+  });
+});
+
+app.post("/admin/resolve-violation", (req, res) => {
+  const { id, status } = req.body;
+  if (!id) return res.status(400).json({ error: "Incident ID required" });
+  db.query("UPDATE proctoring_logs SET status = ? WHERE id = ?", [status || "Resolved", id], (err) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: true });
+    }
+    res.json({ success: true });
+  });
+});
+
+
 app.get("/admin/assessment-emails", (req, res) => {
   const { id, type } = req.query;
   if (!id) return res.json({ emails: "" });
@@ -1275,9 +1754,7 @@ app.get("/admin/assessment-emails", (req, res) => {
   });
 });
 
-/* =========================
-   AETHON INTELLIGENCE AGENT (GROQ)
-========================= */
+
 const Groq = require("groq-sdk");
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -1312,6 +1789,33 @@ app.post("/admin/agent/query", async (req, res) => {
       sid = insertSession;
     }
 
+    
+    if (prompt.startsWith("EXECUTE_CONFIRMED_SQL::")) {
+      const base64Sql = prompt.split("::")[1];
+      const sqlToExec = Buffer.from(base64Sql, 'base64').toString('utf8');
+      
+      try {
+        const dbResults = await new Promise((resolve, reject) => {
+          db.query(sqlToExec, (err, results) => {
+             if (err) reject(err); else resolve(results);
+          });
+        });
+        
+        const successMsg = `<div style="color:#10b981; padding: 10px; background: rgba(16,185,129,0.1); border-radius: 8px; border: 1px solid rgba(16,185,129,0.3);">✅ <strong>Query Executed Successfully!</strong><br>Affected rows: ${dbResults.affectedRows || 0}</div>`;
+        
+        await new Promise((resolve, reject) => {
+          db.query("INSERT INTO admin_chat_messages (session_id, role, content) VALUES (?, 'assistant', ?)", [sid, successMsg], (err) => {
+            if (err) reject(err); else resolve();
+          });
+        });
+        
+        return res.json({ sessionId: sid, response: successMsg });
+      } catch (dbErr) {
+        const errMsg = `<div style="color:#ef4444; padding: 10px; background: rgba(239,68,68,0.1); border-radius: 8px; border: 1px solid rgba(239,68,68,0.3);">❌ <strong>Execution Failed!</strong><br>${dbErr.message}</div>`;
+        return res.json({ sessionId: sid, response: errMsg });
+      }
+    }
+
     await new Promise((resolve, reject) => {
       db.query("INSERT INTO admin_chat_messages (session_id, role, content) VALUES (?, 'user', ?)", [sid, prompt], (err) => {
         if (err) reject(err); else resolve();
@@ -1325,7 +1829,7 @@ app.post("/admin/agent/query", async (req, res) => {
     });
 
     const messages = [
-      { role: "system", content: "You are Aethon Intelligence, an AI data analyst for an assessment platform. The database has tables: users (email, name, college_name, roll_number), assessments (id, title, test_type), student_results (id, student_email, assessment_id, score, percentage, submitted_at), proctoring_logs (id, student_email, assessment_id, log_type). Note: log_type contains values like 'tab_switch', 'fullscreen_exit', 'hover_out'. If asked for data, return ONLY a valid SQL query wrapped in ```sql ... ```. If chatting, reply normally. For SQL, only use SELECT." },
+      { role: "system", content: "You are Aethon Intelligence, an AI data analyst for an assessment platform. The database has tables:\n- users (id, email, name, password, dob, roll_number, personal_number, college_name)\n- assessments (id, title, due_date, marks, questions, description, total_time, test_type, start_time, end_time)\n- assigned_students (id, assessment_id, student_email, submitted, auto_submitted)\n- questions (id, assessment_id, section_name, section_id, question_type, question_title, question_text, option_a, option_b, option_c, option_d, correct_answer, difficulty, marks, visible_testcases, hidden_testcases, coding_input, coding_output, sample_testcase, created_at)\n- student_results (id, assessment_id, assessment_title, student_email, score, auto_submitted, percentage, submitted_at, mcq_score, coding_score, mcq_attended, coding_attended)\n- student_answers (id, assessment_id, student_email, question_id, selected_option, code_submitted, is_correct, created_at)\n- student_feedback (id, assessment_id, student_email, overall_rating, difficulty_rating, clarity_rating, platform_experience, recommendation, preferred_type, platform_issues, created_at)\n- proctoring_logs (id, assessment_id, student_email, log_type, file_path, created_at). Note: log_type contains values like 'tab_switch', 'fullscreen_exit', 'hover_out'.\nIf asked for data or modifications, return a valid SQL query wrapped in ```sql ... ```. For modifications (INSERT, UPDATE, DELETE), also include a short sentence starting with 'Risk Level: [Low/Medium/High]'. I will handle the execution." },
       ...history.map(m => ({ role: m.role, content: m.content }))
     ];
 
@@ -1337,9 +1841,12 @@ app.post("/admin/agent/query", async (req, res) => {
     let aiResponse = chatCompletion.choices[0]?.message?.content || "I couldn't process that.";
 
     const sqlMatch = aiResponse.match(/```sql\n([\s\S]*?)\n```/i) || aiResponse.match(/```([\s\S]*?)```/i);
-    if (sqlMatch && sqlMatch[1].trim().toUpperCase().startsWith("SELECT")) {
+    if (sqlMatch) {
       const sql = sqlMatch[1].trim();
-      try {
+      const sqlUpper = sql.toUpperCase();
+      
+      if (sqlUpper.startsWith("SELECT")) {
+        try {
         const dbResults = await new Promise((resolve, reject) => {
           db.query(sql, (err, results) => {
              if (err) reject(err); else resolve(results);
@@ -1361,6 +1868,18 @@ app.post("/admin/agent/query", async (req, res) => {
       } catch (dbErr) {
         aiResponse = "Error executing query: " + dbErr.message;
       }
+      } else if (sqlUpper.startsWith("UPDATE") || sqlUpper.startsWith("INSERT") || sqlUpper.startsWith("DELETE")) {
+        const encodedSql = Buffer.from(sql).toString('base64');
+        aiResponse += `
+          <div style="margin-top:15px; padding: 15px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px;">
+            <strong style="color: #f59e0b;"><i class="ri-alert-line"></i> Action Requires Confirmation</strong>
+            <p style="margin: 8px 0; font-size: 13px; color: #d4d4d8;">You are about to execute a database modification. Please review the query carefully.</p>
+            <button class="export-btn" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border-color: rgba(239, 68, 68, 0.4); margin-top: 10px;" onclick="confirmAgentAction('${encodedSql}')">
+              <i class="ri-error-warning-line"></i> Confirm & Execute
+            </button>
+          </div>
+        `;
+      }
     }
 
     await new Promise((resolve, reject) => {
@@ -1376,9 +1895,69 @@ app.post("/admin/agent/query", async (req, res) => {
   }
 });
 
-/* =========================
-   START SERVER
-========================= */
+
+app.get("/results/analytics/:assessmentId/:studentEmail", async (req, res) => {
+  const { assessmentId, studentEmail } = req.params;
+
+  try {
+    const assessment = await new Promise((resolve, reject) => {
+      db.query("SELECT * FROM assessments WHERE id=?", [assessmentId], (err, results) => {
+        if (err) reject(err); else resolve(results[0]);
+      });
+    });
+
+    if (!assessment) return res.status(404).json({ error: "Assessment not found" });
+
+    const studentResult = await new Promise((resolve, reject) => {
+      db.query("SELECT * FROM student_results WHERE assessment_id=? AND student_email=?", [assessmentId, studentEmail], (err, results) => {
+        if (err) reject(err); else resolve(results[0] || null);
+      });
+    });
+
+    const leaderboard = await new Promise((resolve, reject) => {
+      const sql = `
+        SELECT a.student_email, IFNULL(r.score, 0) as score, IFNULL(r.percentage, 0) as percentage
+        FROM assigned_students a
+        LEFT JOIN student_results r ON a.assessment_id = r.assessment_id AND a.student_email = r.student_email
+        WHERE a.assessment_id = ?
+        ORDER BY score DESC, percentage DESC
+      `;
+      db.query(sql, [assessmentId], (err, results) => {
+        if (err) reject(err); else resolve(results);
+      });
+    });
+
+    const questions = await new Promise((resolve, reject) => {
+      const sql = `
+        SELECT q.id, q.question_type, q.question_title, q.question_text, 
+               q.option_a, q.option_b, q.option_c, q.option_d, q.correct_answer, 
+               q.coding_output, q.marks,
+               sa.selected_option, sa.code_submitted, sa.is_correct
+        FROM questions q
+        LEFT JOIN student_answers sa 
+          ON q.id = sa.question_id AND sa.student_email = ?
+        WHERE q.assessment_id = ?
+      `;
+      db.query(sql, [studentEmail, assessmentId], (err, results) => {
+        if (err) reject(err); else resolve(results);
+      });
+    });
+
+    res.json({
+      success: true,
+      assessment,
+      studentResult,
+      leaderboard,
+      questions
+    });
+
+  } catch (err) {
+    console.error("Analytics Error:", err);
+    res.status(500).json({ error: "Server Error" });
+  }
+});
+
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

@@ -23,23 +23,79 @@
     }
     
     body {
-      background-color: var(--bg);
+      min-height: 100vh;
       color: var(--text);
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 100vh;
       padding: 2rem;
+      position: relative;
+      overflow-x: hidden;
+      background-color: #070b14;
+    }
+
+    /* Ambient Deep Light Field */
+    body::before {
+      content: "";
+      position: fixed;
+      top: -50%; left: -50%; width: 200%; height: 200%;
+      pointer-events: none;
+      z-index: -2;
+      background: 
+        radial-gradient(circle at 30% 40%, rgba(139, 92, 246, 0.25) 0%, transparent 40%),
+        radial-gradient(circle at 70% 60%, rgba(96, 165, 250, 0.2) 0%, transparent 40%),
+        radial-gradient(circle at 50% 20%, rgba(45, 212, 191, 0.15) 0%, transparent 35%);
+      filter: blur(80px);
+      animation: ambientDrift 30s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Spatial Mesh Overlay */
+    body::after {
+      content: "";
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      z-index: -1;
+      background-image: radial-gradient(rgba(255,255,255,0.15) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: radial-gradient(ellipse at 50% 50%, black 20%, transparent 80%);
+      -webkit-mask-image: radial-gradient(ellipse at 50% 50%, black 20%, transparent 80%);
+      opacity: 0.8;
+    }
+
+    @keyframes ambientDrift {
+      0% { transform: rotate(0deg) scale(1) translate(0, 0); }
+      50% { transform: rotate(3deg) scale(1.1) translate(3%, 2%); }
+      100% { transform: rotate(-2deg) scale(1.05) translate(-2%, -3%); }
     }
 
     .container {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 1rem;
+      background: rgba(15, 10, 25, 0.6);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 1.5rem;
       padding: 2.5rem;
       width: 100%;
       max-width: 600px;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 0 50px rgba(139, 92, 246, 0.15), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .container::before {
+      content: '';
+      position: absolute;
+      top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      background: radial-gradient(circle at center, rgba(139, 92, 246, 0.03) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container > * {
+      position: relative;
+      z-index: 1;
     }
 
     .header {
@@ -48,11 +104,13 @@
     }
 
     .header h1 {
-      font-size: 1.8rem;
+      font-size: 2rem;
+      font-weight: 700;
       margin-bottom: 0.5rem;
-      background: linear-gradient(to right, #34d399, #10b981);
+      background: linear-gradient(to right, #a78bfa, #c084fc);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
     }
 
     .header p {
@@ -62,10 +120,17 @@
 
     .form-group {
       margin-bottom: 1.5rem;
-      background: rgba(255, 255, 255, 0.03);
+      background: linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
       padding: 1.5rem;
-      border-radius: 0.75rem;
-      border: 1px solid var(--border);
+      border-radius: 1rem;
+      border: 1px solid rgba(255,255,255,0.04);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s, box-shadow 0.3s;
+    }
+
+    .form-group:hover {
+      transform: translateY(-2px);
+      border-color: rgba(139, 92, 246, 0.3);
+      box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
     }
 
     .form-group label {
@@ -79,7 +144,8 @@
     }
 
     .form-group label i {
-      color: var(--primary);
+      color: #a78bfa;
+      font-size: 1.2rem;
     }
 
     .star-rating {
@@ -101,43 +167,55 @@
       margin: 0;
     }
 
-    .star-rating input:checked ~ label,
-    .star-rating label:hover,
-    .star-rating label:hover ~ label {
+    .star-rating input:checked ~ label {
       color: #fbbf24;
+      text-shadow: 0 0 15px rgba(251, 191, 36, 0.6);
     }
 
     select, input[type="text"] {
       width: 100%;
-      padding: 0.75rem 1rem;
-      background: rgba(0,0,0,0.2);
-      border: 1px solid var(--border);
+      padding: 0.85rem 1rem;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       color: white;
-      border-radius: 0.5rem;
+      border-radius: 0.75rem;
       outline: none;
-      transition: border-color 0.2s;
+      transition: all 0.3s;
+      font-size: 0.95rem;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    select option {
+      background-color: #0f172a;
+      color: white;
+      padding: 10px;
     }
 
     select:focus, input[type="text"]:focus {
-      border-color: var(--primary);
+      border-color: #a78bfa;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.2), 0 0 0 3px rgba(139, 92, 246, 0.15);
     }
 
     .btn-submit {
       width: 100%;
-      padding: 1rem;
-      background: linear-gradient(135deg, #10b981, #059669);
+      padding: 1.1rem;
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
       color: white;
       border: none;
-      border-radius: 0.5rem;
-      font-size: 1.1rem;
+      border-radius: 0.75rem;
+      font-size: 1.05rem;
       font-weight: 600;
+      letter-spacing: 0.5px;
       cursor: pointer;
-      transition: opacity 0.2s, transform 0.1s;
+      transition: all 0.3s;
       margin-top: 1rem;
+      box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4);
+      text-transform: uppercase;
     }
 
     .btn-submit:hover {
-      opacity: 0.9;
+      box-shadow: 0 6px 20px rgba(124, 58, 237, 0.6);
+      transform: translateY(-1px);
     }
 
     .btn-submit:active {
@@ -170,7 +248,6 @@
 
     <form id="feedbackForm">
       
-      <!-- 1. Overall Rating -->
       <div class="form-group">
         <label><i class="ri-star-line"></i> Overall Assessment Rating</label>
         <div class="star-rating">
@@ -182,7 +259,6 @@
         </div>
       </div>
 
-      <!-- 2. Difficulty Rating -->
       <div class="form-group">
         <label><i class="ri-bar-chart-line"></i> Assessment Difficulty</label>
         <div class="star-rating">
@@ -194,7 +270,6 @@
         </div>
       </div>
 
-      <!-- 3. Clarity Rating -->
       <div class="form-group">
         <label><i class="ri-lightbulb-line"></i> Question Clarity</label>
         <div class="star-rating">
@@ -206,7 +281,6 @@
         </div>
       </div>
 
-      <!-- 4. Platform Experience -->
       <div class="form-group">
         <label><i class="ri-macbook-line"></i> Platform Experience</label>
         <div class="star-rating">
@@ -218,7 +292,6 @@
         </div>
       </div>
 
-      <!-- 5. Recommendation -->
       <div class="form-group">
         <label><i class="ri-thumb-up-line"></i> Recommendation</label>
         <select name="recommendation" required>
@@ -229,7 +302,6 @@
         </select>
       </div>
 
-      <!-- 6. Preferred Type -->
       <div class="form-group">
         <label><i class="ri-file-list-3-line"></i> Preferred Assessment Type</label>
         <select name="preferred_type" required>
@@ -240,7 +312,6 @@
         </select>
       </div>
 
-      <!-- 7. Platform Issues -->
       <div class="form-group">
         <label><i class="ri-error-warning-line"></i> Platform Issues</label>
         <select name="platform_issues" required>
@@ -267,7 +338,72 @@
     </div>
   </div>
 
+  <style>
+    @keyframes slideIn {
+      from { transform: translateY(-20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes fadeOut {
+      from { transform: translateY(0); opacity: 1; }
+      to { transform: translateY(-20px); opacity: 0; }
+    }
+  </style>
+
   <script>
+    function showToast(message, type = "success") {
+      const existing = document.getElementById("toast-container");
+      if (existing) existing.remove();
+      
+      const container = document.createElement("div");
+      container.id = "toast-container";
+      container.style.position = "fixed";
+      container.style.top = "24px";
+      container.style.right = "24px";
+      container.style.zIndex = "99999";
+      container.style.display = "flex";
+      container.style.flexDirection = "column";
+      container.style.gap = "8px";
+      container.style.pointerEvents = "none";
+      
+      const isError = type === "error";
+      const isWarning = type === "warning";
+      const isSuccess = type === "success";
+      
+      const bg = isError 
+        ? "#991b1b" 
+        : isWarning 
+          ? "#854d0e" 
+          : isSuccess 
+            ? "#166534" 
+            : "#1e40af";
+            
+      const icon = isError ? "ri-error-warning-fill" : isSuccess ? "ri-check-line" : "ri-information-fill";
+      
+      const toast = document.createElement("div");
+      toast.style.backgroundColor = bg;
+      toast.style.color = "white";
+      toast.style.padding = "10px 18px";
+      toast.style.borderRadius = "10px";
+      toast.style.fontWeight = "600";
+      toast.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.35)";
+      toast.style.display = "flex";
+      toast.style.alignItems = "center";
+      toast.style.gap = "8px";
+      toast.style.fontSize = "13px";
+      toast.style.pointerEvents = "none";
+      toast.style.animation = "slideIn 0.3s ease-out forwards";
+      
+      toast.innerHTML = `<i class="${icon}" style="font-size: 16px; color: white"></i> <span>${message.split(" ").slice(0, 4).join(" ")}</span>`;
+      
+      container.appendChild(toast);
+      document.body.appendChild(container);
+      
+      setTimeout(() => {
+        toast.style.animation = "fadeOut 0.3s ease-out forwards";
+        setTimeout(() => container.remove(), 300);
+      }, 3000);
+    }
+
     document.getElementById('feedbackForm').addEventListener('submit', async (e) => {
       e.preventDefault();
 
@@ -276,7 +412,7 @@
       const studentEmail = localStorage.getItem('userEmail');
 
       if (!assessmentId || !studentEmail) {
-        alert("Missing assessment info or you are not logged in.");
+        showToast("Missing assessment info", "error");
         return;
       }
 
@@ -294,7 +430,7 @@
       };
 
       try {
-        const res = await fetch("http://localhost:3000/submit-feedback", {
+        const res = await fetch("/submit-feedback", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(data)
@@ -302,15 +438,16 @@
         const result = await res.json();
         
         if (result.success) {
+          showToast("Feedback filled", "success");
           document.getElementById('feedbackForm').style.display = 'none';
           document.getElementById('successMessage').style.display = 'block';
           document.querySelector('.header').style.display = 'none';
         } else {
-          alert("Failed to submit feedback.");
+          showToast("Feedback failed", "error");
         }
       } catch (err) {
         console.error(err);
-        alert("Server error.");
+        showToast("Feedback failed", "error");
       }
     });
   </script>

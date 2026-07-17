@@ -1,11 +1,11 @@
-// admin-settings.js - Manage settings tabs, toggle states, and key revealing
+
 
 function switchSettingsPane(paneId, buttonElement) {
-  // Update button classes
+  
   document.querySelectorAll(".settings-tab-btn").forEach(btn => btn.classList.remove("active"));
   buttonElement.classList.add("active");
 
-  // Update visible pane
+  
   document.querySelectorAll(".settings-pane").forEach(pane => pane.classList.remove("active"));
   document.getElementById(paneId).classList.add("active");
 }

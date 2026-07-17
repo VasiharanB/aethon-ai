@@ -9,11 +9,11 @@
   <link rel="stylesheet" href="css/admin-agent.css">
 </head>
 <body>
-  <!-- Dummy hidden fields to prevent browser credentials autofill hijack -->
+  
   <input type="text" style="display:none;" name="chrome_email_autofill_preventer">
   <input type="password" style="display:none;" name="chrome_password_autofill_preventer">
 
-  <!-- LEFT SIDEBAR -->
+  
   <aside class="sidebar">
     <div class="sidebar-logo">
       <i class="ri-flashlight-line logo-icon"></i>
@@ -22,7 +22,7 @@
     
     <nav class="sidebar-menu">
       <a href="admin.html" class="menu-item">
-        <i class="ri-dashboard-line"></i> Overview
+        <i class="ri-dashboard-line"></i> Dashboard
       </a>
       <a href="admin-students.html" class="menu-item active">
         <i class="ri-group-line"></i> Students
@@ -43,19 +43,21 @@
       <a href="#" class="menu-item" onclick="openAgent(); return false;" style="color: #c084fc;">
         <i class="ri-sparkling-fill" style="color: #c084fc;"></i> Aethon Intelligence
       </a>
-      
+      <a href="admin-prompts.html" class="menu-item" style="color: #c084fc;">
+        <i class="ri-book-read-line" style="color: #c084fc;"></i> Prompt Library
+      </a>
 
     </nav>
     
     <div class="sidebar-profile">
-      <!-- Injected by admin-common.js -->
+      
     </div>
   </aside>
 
-  <!-- MAIN VIEWPORT -->
+  
   <div class="main-content">
     
-    <!-- TOP HEADER -->
+    
     <header class="top-header">
       <div class="breadcrumb">
         <span>Global Environment</span>
@@ -64,10 +66,6 @@
       </div>
       
       <div class="header-actions">
-        <div class="pill-toggle">
-          <a href="dashboard.html" class="toggle-btn">Student View</a>
-          <a href="assessment.html" class="toggle-btn">Assessment IDE</a>
-        </div>
         
         <div class="header-search">
           <i class="ri-search-line"></i>
@@ -80,7 +78,7 @@
       </div>
     </header>
 
-    <!-- CONTENT CONTAINER -->
+    
     <div class="page-container">
       
       <div class="page-title-block">
@@ -88,7 +86,7 @@
         <p class="page-subtitle">Manage and monitor student accounts and access.</p>
       </div>
 
-      <!-- STUDENTS TABLE PANEL -->
+      
       <div class="panel-card">
         <div class="panel-header">
           <div class="header-search" style="margin-left: 0;">
@@ -119,7 +117,7 @@
               </tr>
             </thead>
             <tbody>
-              <!-- Dynamic Rows populated by admin-students.js -->
+              
               <tr>
                 <td colspan="6" style="text-align: center; color: var(--gray-text); padding: 40px 0;">Loading students database...</td>
               </tr>
@@ -131,7 +129,7 @@
     </div>
   </div>
 
-  <!-- ADD STUDENT MODAL -->
+  
   <div class="modal-overlay" id="add-student-modal">
     <div class="modal-card" style="max-width: 500px;">
       <div class="modal-header">
@@ -139,7 +137,7 @@
         <button class="modal-close" onclick="closeAddStudentModal()">&times;</button>
       </div>
       
-      <!-- Dummy hidden fields to prevent browser credentials autofill hijack -->
+      
       <input type="text" style="display:none;" name="modal_email_dummy">
       <input type="password" style="display:none;" name="modal_password_dummy">
 
@@ -181,6 +179,17 @@
         <input type="text" id="new-student-college" class="form-control" placeholder="e.g. Aethon Institute of Technology">
       </div>
 
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%;">
+        <div class="form-group">
+          <label for="new-student-joining">Joining Year</label>
+          <input type="number" id="new-student-joining" class="form-control" placeholder="e.g. 2022">
+        </div>
+        <div class="form-group">
+          <label for="new-student-passing">Passing Year</label>
+          <input type="number" id="new-student-passing" class="form-control" placeholder="e.g. 2026">
+        </div>
+      </div>
+
       <div id="addStudentMsg" style="text-align: center; min-height: 22px; font-size: 13px; margin: 10px 0;"></div>
 
       <div class="modal-footer">
@@ -190,7 +199,68 @@
     </div>
   </div>
 
-  <!-- STUDENT DETAILS MODAL -->
+  
+  <div class="modal-overlay" id="edit-student-modal">
+    <div class="modal-card" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Edit Student Account</h3>
+        <button class="modal-close" onclick="closeEditStudentModal()">&times;</button>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%;">
+        <div class="form-group">
+          <label for="edit-student-name">Full Name *</label>
+          <input type="text" id="edit-student-name" class="form-control" placeholder="e.g. John Doe">
+        </div>
+        <div class="form-group">
+          <label for="edit-student-email">Email Address (Read-only)</label>
+          <input type="email" id="edit-student-email" class="form-control" placeholder="e.g. john@email.com" readonly style="background-color: rgba(255,255,255,0.05); color: var(--gray-text); cursor: not-allowed;">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%;">
+        <div class="form-group">
+          <label for="edit-student-roll">Roll Number</label>
+          <input type="text" id="edit-student-roll" class="form-control" placeholder="e.g. 2023-CS-42">
+        </div>
+        <div class="form-group">
+          <label for="edit-student-phone">Personal Number (Phone)</label>
+          <input type="text" id="edit-student-phone" class="form-control" placeholder="e.g. +91 9876543210">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%;">
+        <div class="form-group">
+          <label for="edit-student-dob">Date of Birth</label>
+          <input type="date" id="edit-student-dob" class="form-control" style="background-color: var(--card-bg); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 10px; font-size: 13px;">
+        </div>
+        <div class="form-group">
+          <label for="edit-student-college">College Name</label>
+          <input type="text" id="edit-student-college" class="form-control" placeholder="e.g. Aethon Institute of Technology">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%;">
+        <div class="form-group">
+          <label for="edit-student-joining">Joining Year</label>
+          <input type="number" id="edit-student-joining" class="form-control" placeholder="e.g. 2022">
+        </div>
+        <div class="form-group">
+          <label for="edit-student-passing">Passing Year</label>
+          <input type="number" id="edit-student-passing" class="form-control" placeholder="e.g. 2026">
+        </div>
+      </div>
+
+      <div id="editStudentMsg" style="text-align: center; min-height: 22px; font-size: 13px; margin: 10px 0;"></div>
+
+      <div class="modal-footer">
+        <button class="btn-outline" onclick="closeEditStudentModal()">Cancel</button>
+        <button class="btn-primary" onclick="submitEditStudent()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  
   <div class="modal-overlay" id="student-details-modal">
     <div class="modal-card" style="max-width: 450px;">
       <div class="modal-header">
@@ -226,6 +296,14 @@
           <span id="details-college">Aethon Institute of Technology</span>
         </div>
         <div>
+          <span style="display: block; font-size: 11px; color: var(--gray-text); font-weight: 600; text-transform: uppercase;">Joining Year</span>
+          <span id="details-joining">N/A</span>
+        </div>
+        <div>
+          <span style="display: block; font-size: 11px; color: var(--gray-text); font-weight: 600; text-transform: uppercase;">Passing Year</span>
+          <span id="details-passing">N/A</span>
+        </div>
+        <div>
           <span style="display: block; font-size: 11px; color: var(--gray-text); font-weight: 600; text-transform: uppercase;">Avg score</span>
           <span id="details-score">82%</span>
         </div>
@@ -235,7 +313,10 @@
         </div>
       </div>
 
-      <div class="modal-footer" style="justify-content: flex-end;">
+      <div class="modal-footer" style="justify-content: space-between; display: flex; width: 100%;">
+        <button class="btn-outline" id="edit-details-btn" onclick="openEditStudentFromDetails()" style="display: flex; align-items: center; gap: 6px;">
+          <i class="ri-edit-line"></i> Edit Details
+        </button>
         <button class="btn-primary" onclick="closeStudentDetailsModal()">Close Details</button>
       </div>
     </div>
@@ -244,7 +325,7 @@
   <script src="js/admin-common.js"></script>
   <script src="js/admin-students.js"></script>
 
-  <!-- AETHON INTELLIGENCE FULLSCREEN OVERLAY -->
+  
   <div id="agent-overlay" class="agent-overlay">
     <div class="agent-sidebar">
       <div class="sidebar-header">
@@ -252,7 +333,7 @@
         <button onclick="newChat()"><i class="ri-add-line"></i></button>
       </div>
       <div id="agent-history-list" class="history-list">
-        <!-- Sessions load here -->
+        
       </div>
     </div>
     
@@ -270,7 +351,7 @@
       </div>
 
       <div id="agent-chat-container" class="agent-chat-container">
-        <!-- Default State -->
+        
         <div id="agent-welcome" class="agent-welcome">
           <div class="big-orb"></div>
           <h2>How can I help you today?</h2>
@@ -291,21 +372,6 @@
             <button onclick="sendSuggested('Identify students at academic risk')">Identify students at academic risk</button>
           </div>
 
-          <button class="manual-toggle-btn" onclick="document.getElementById('prompt-manual').classList.toggle('show')">
-            <i class="ri-book-read-line"></i> View Prompt Manual for Beginners
-          </button>
-          
-          <div id="prompt-manual" class="prompt-manual">
-            <h4><i class="ri-lightbulb-flash-line"></i> How to talk to Aethon Intelligence</h4>
-            <p>You can ask Aethon to fetch, filter, and analyze any data from the platform. Try formats like these:</p>
-            <ul>
-              <li><strong>Counting:</strong> "How many students are registered?" or "How many assessments do we have?"</li>
-              <li><strong>Filtering:</strong> "List all students from [College Name]."</li>
-              <li><strong>Scoring:</strong> "Show me the top 10 students with the highest average scores."</li>
-              <li><strong>Security:</strong> "Find all students who have a 'Critical' severity proctoring violation."</li>
-              <li><strong>Specifics:</strong> "What is the average score for the assessment titled [Assessment Name]?"</li>
-            </ul>
-          </div>
         </div>
 
         <div id="agent-messages" class="agent-messages" style="display:none;"></div>

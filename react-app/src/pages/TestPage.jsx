@@ -20,15 +20,32 @@ function TestPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [flaggedQuestions, setFlaggedQuestions] = useState([]);
   const answersRef = useRef({});
+  const questionsRef = useRef([]);
+  const submittedCodingRef = useRef([]);
   const codingPanelRef = useRef();
 
-  // State to track code executions and submitted coding questions
+  
   const [hasRunCodeMap, setHasRunCodeMap] = useState({});
   const [submittedCodingQuestions, setSubmittedCodingQuestions] = useState([]);
 
+  
+  const [terminalLogs, setTerminalLogs] = useState("Terminal ready. Click 'Run Code' to execute visible tests.");
+  const [executionStats, setExecutionStats] = useState(null);
+  const [isRunningTests, setIsRunningTests] = useState(false);
+  const [isSubmittingQuestion, setIsSubmittingQuestion] = useState(false);
+
   useEffect(() => {
     answersRef.current = answers;
-  }, [answers]);
+    questionsRef.current = questions;
+    submittedCodingRef.current = submittedCodingQuestions;
+  }, [answers, questions, submittedCodingQuestions]);
+
+  useEffect(() => {
+    setTerminalLogs("Terminal ready. Click 'Run Code' to execute visible tests.");
+    setExecutionStats(null);
+    setIsRunningTests(false);
+    setIsSubmittingQuestion(false);
+  }, [selected?.id]);
 
   const toggleFlagQuestion = (qId) => {
     setFlaggedQuestions(prev => 
@@ -52,15 +69,18 @@ function TestPage() {
   };
 
   const submitAssessment = async (reason = null) => {
+    addToast("Test completed", "success");
     setIsSubmitting(true);
 
-    // Filter out coding answers where the student did not click "Submit Question"
+    
     const finalAnswers = { ...answersRef.current };
-    questions.forEach(q => {
-      if (q.question_type === 'coding' && !submittedCodingQuestions.includes(q.id)) {
+    questionsRef.current.forEach(q => {
+      if (q.question_type === 'coding' && !submittedCodingRef.current.includes(q.id)) {
         delete finalAnswers[q.id];
       }
     });
+
+    const isAutoSubmitted = reason && reason !== "Manual Submission" && reason !== "Manual Exit" ? 1 : 0;
 
     try {
       await fetch("http://localhost:3000/submit-assessment", {
@@ -69,7 +89,8 @@ function TestPage() {
         body: JSON.stringify({
           assessment_id: id,
           student_email: userEmail,
-          answers: finalAnswers
+          answers: finalAnswers,
+          auto_submitted: isAutoSubmitted
         })
       });
     } catch (err) {
@@ -91,11 +112,12 @@ function TestPage() {
 
   const [toasts, setToasts] = useState([]);
   const addToast = (message, type = "info") => {
+    const shortMessage = message.split(" ").slice(0, 4).join(" ");
     const toastId = Date.now() + Math.random();
-    setToasts(prev => [...prev, { id: toastId, message, type }]);
+    setToasts(prev => [...prev, { id: toastId, message: shortMessage, type }]);
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== toastId));
-    }, 4000);
+    }, 3000);
   };
 
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -142,7 +164,7 @@ function TestPage() {
              setIsUrgent(true);
              if (!hasWarned10Min.current) {
                hasWarned10Min.current = true;
-               addToast("Warning: Only 10 minutes left! Test will auto-submit soon.", "warning");
+               addToast("10 minutes remaining", "warning");
              }
            }
         }
@@ -166,7 +188,7 @@ function TestPage() {
   const lastVideoFlag = useRef(0);
 
   const startAIProctoring = (stream) => {
-    // 1. Decibel-based Audio Level Detection (>40 dB)
+    
     if (Number(controls.mic) === 1 && stream.getAudioTracks().length > 0) {
       try {
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -189,9 +211,9 @@ function TestPage() {
           
           if (db > 40) {
             const now = Date.now();
-            if (now - lastAudioFlag.current > 15000) { // 15s cooldown
+            if (now - lastAudioFlag.current > 15000) { 
               lastAudioFlag.current = now;
-              addToast(`Audio Violation: Suspicious audio level detected (${db} dB)`, "error");
+              addToast("Audio violation detected", "error");
               sendLog("audio_flag");
             }
           }
@@ -201,7 +223,7 @@ function TestPage() {
       }
     }
 
-    // 2. Motion Detection via Canvas
+    
     if (Number(controls.webcam) === 1) {
       const videoTrack = stream.getVideoTracks()[0];
       if (videoTrack) {
@@ -224,19 +246,19 @@ function TestPage() {
           if (previousData) {
             let diffPixels = 0;
             const totalPixels = currentData.data.length / 4;
-            for (let i = 0; i < currentData.data.length; i += 16) { // check every 4th pixel for performance
+            for (let i = 0; i < currentData.data.length; i += 16) { 
               const rDiff = Math.abs(currentData.data[i] - previousData.data[i]);
               const gDiff = Math.abs(currentData.data[i+1] - previousData.data[i+1]);
               const bDiff = Math.abs(currentData.data[i+2] - previousData.data[i+2]);
               if (rDiff + gDiff + bDiff > 80) diffPixels++;
             }
-            if (diffPixels / (totalPixels / 4) > 0.15) { // 15% significant change
+            if (diffPixels / (totalPixels / 4) > 0.15) { 
               const now = Date.now();
-              if (now - lastVideoFlag.current > 15000) { // 15s cooldown
+              if (now - lastVideoFlag.current > 15000) { 
                 lastVideoFlag.current = now;
-                addToast("Video Violation: Excessive movement detected", "error");
+                 addToast("Motion violation detected", "error");
                 
-                // Save Snapshot instead of video clip
+                
                 const snapshot = canvas.toDataURL("image/jpeg", 0.7);
                 fetch("http://localhost:3000/proctor/log", {
                   method: "POST",
@@ -259,11 +281,30 @@ function TestPage() {
   
   const urlParams = new URLSearchParams(window.location.search);
   const emailFromUrl = urlParams.get("email");
+  const nameFromUrl = urlParams.get("name");
+  const isResumed = urlParams.get("resumed") === "true";
   if (emailFromUrl) {
     localStorage.setItem("userEmail", emailFromUrl);
   }
+  if (nameFromUrl) {
+    localStorage.setItem("userName", nameFromUrl);
+  }
   
   const userEmail = emailFromUrl || localStorage.getItem("userEmail") || sessionStorage.getItem("userEmail") || "unknown@student.com";
+
+  useEffect(() => {
+    const cachedName = localStorage.getItem("userName");
+    if (!cachedName && userEmail && userEmail !== "unknown@student.com" && userEmail !== "guest@student.com") {
+      fetch(`http://localhost:3000/student/profile?email=${encodeURIComponent(userEmail)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.name) {
+            localStorage.setItem("userName", data.name);
+          }
+        })
+        .catch(err => console.error("Failed to fetch user name:", err));
+    }
+  }, [userEmail]);
 
   useEffect(() => {
     fetch(`http://localhost:3000/assessment-full/${id}`)
@@ -281,11 +322,37 @@ function TestPage() {
         if (data.questions?.length > 0) {
           setSelected(data.questions[0]);
         }
+        
+        if (data.assessment) {
+          addToast("Test started", "success");
+        }
+
+        // Hydrate saved answers
+        return fetch(`http://localhost:3000/assessment-answers/${id}/${userEmail}`);
+      })
+      .then((res) => {
+        if (res) return res.json();
+      })
+      .then((savedAnswers) => {
+        if (savedAnswers && Array.isArray(savedAnswers)) {
+          const initialAnswers = {};
+          const initialSubmittedCoding = [];
+          savedAnswers.forEach((ans) => {
+            if (ans.selected_option !== null && ans.selected_option !== undefined) {
+              initialAnswers[ans.question_id] = ans.selected_option;
+            } else if (ans.code_submitted !== null && ans.code_submitted !== undefined) {
+              initialAnswers[ans.question_id] = ans.code_submitted;
+              initialSubmittedCoding.push(ans.question_id);
+            }
+          });
+          setAnswers(initialAnswers);
+          setSubmittedCodingQuestions(initialSubmittedCoding);
+        }
       })
       .catch((err) => console.log(err));
-  }, [id]);
+  }, [id, userEmail]);
 
-  // Handle auto-submit
+  
   const forceSubmit = (reason) => {
     submitAssessment(reason);
   };
@@ -319,7 +386,7 @@ function TestPage() {
     return new Promise(async (resolve) => {
       const promises = [];
       
-      // Safety timeout so test submission never hangs indefinitely
+      
       const timeout = setTimeout(() => {
         resolve();
       }, 4000);
@@ -372,7 +439,7 @@ function TestPage() {
       if (document.hidden && Number(controls.tab_switch) === 1) {
         sendLog("tab_switch");
         
-        // Auto-submit if away for 10 seconds
+        
         tabTimerRef.current = setTimeout(() => {
           forceSubmit("Away from test tab for more than 10 seconds");
         }, 10000);
@@ -389,14 +456,14 @@ function TestPage() {
         });
 
       } else if (!document.hidden && Number(controls.tab_switch) === 1) {
-        // Returned safely
+        
         if (tabTimerRef.current) {
           clearTimeout(tabTimerRef.current);
           tabTimerRef.current = null;
           
           setTabRemaining(prev => {
             if (prev !== null && prev > 0) {
-              addToast(`Warning: You switched tabs! You have ${prev} chance(s) left.`, "error");
+              addToast("Tab switch warning", "error");
             }
             return prev;
           });
@@ -428,7 +495,7 @@ function TestPage() {
             forceSubmit("Exceeded Mouse Hover Out Limit");
             return 0;
           }
-          addToast(`Warning: Mouse left window! You have ${newVal} chance(s) left.`, "error");
+          addToast("Mouse window exit", "error");
           return newVal;
         });
       }
@@ -439,7 +506,7 @@ function TestPage() {
         e.preventDefault();
         e.stopPropagation();
         sendLog("copy_paste_attempt");
-        addToast("Copy/Paste is disabled for this test!", "error");
+        addToast("Copy paste blocked", "error");
       }
     };
 
@@ -449,7 +516,7 @@ function TestPage() {
           e.preventDefault();
           e.stopPropagation();
           sendLog("copy_paste_attempt");
-          addToast("Keyboard shortcuts for Copy/Paste are disabled!", "error");
+          addToast("Copy paste blocked", "error");
         }
       }
     };
@@ -458,7 +525,7 @@ function TestPage() {
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     document.addEventListener("mouseleave", handleMouseLeave);
     
-    // Copy Paste
+    
     window.addEventListener("copy", handleCopyPaste, { capture: true });
     window.addEventListener("cut", handleCopyPaste, { capture: true });
     window.addEventListener("paste", handleCopyPaste, { capture: true });
@@ -480,17 +547,51 @@ function TestPage() {
   const startTestSequence = async () => {
     setPermissionError("");
     
+    const check = await new Promise((resolve) => {
+      if (!document.documentElement.hasAttribute("data-aethon-extension-active")) {
+        return resolve({ passed: false, error: "The Aethon Exam Security Shield extension is not active. Please ensure it is installed and enabled." });
+      }
+
+      const handleResponse = (e) => {
+        window.removeEventListener("AETHON_SCAN_RESPONSE", handleResponse);
+        clearTimeout(timeout);
+        const data = e.detail;
+        if (data && data.status === "success") {
+          if (data.forbiddenDetected && data.forbiddenDetected.length > 0) {
+            const names = data.forbiddenDetected.map(ext => ext.name).join(", ");
+            return resolve({ passed: false, error: `Forbidden extension(s) detected: ${names}. Please disable them in chrome://extensions/ and reload.` });
+          }
+          return resolve({ passed: true });
+        } else {
+          return resolve({ passed: false, error: "Security shield returned an invalid response. Please reload the page." });
+        }
+      };
+
+      window.addEventListener("AETHON_SCAN_RESPONSE", handleResponse);
+      window.dispatchEvent(new CustomEvent("AETHON_SCAN_REQUEST"));
+
+      const timeout = setTimeout(() => {
+        window.removeEventListener("AETHON_SCAN_RESPONSE", handleResponse);
+        resolve({ passed: false, error: "Security shield communication timed out. Please check if the extension is enabled." });
+      }, 1500);
+    });
+
+    if (!check.passed) {
+      setPermissionError(check.error);
+      return;
+    }
+    
     let displayStream = null;
     let userStream = null;
 
     try {
-      // 1. Request Screen Recording Media first (if enabled)
+      
       if (Number(controls.screen_record) === 1) {
         displayStream = await navigator.mediaDevices.getDisplayMedia({
           video: { displaySurface: "monitor" }
         });
         
-        // CHECK IF ENTIRE SCREEN (MONITOR) WAS SELECTED
+        
         const videoTrack = displayStream.getVideoTracks()[0];
         const settings = videoTrack.getSettings();
         if (settings.displaySurface && settings.displaySurface !== "monitor") {
@@ -498,7 +599,7 @@ function TestPage() {
           throw new Error("NOT_ENTIRE_SCREEN");
         }
 
-        // Add track ended listener to prevent malpractice (Stop sharing clicked)
+        
         videoTrack.onended = () => {
           forceSubmit("Stopped Screen Sharing");
         };
@@ -507,11 +608,11 @@ function TestPage() {
         screenRecorder.ondataavailable = (e) => {
           if (e.data.size > 0) screenChunksRef.current.push(e.data);
         };
-        screenRecorder.start(10000); // 10s chunks
+        screenRecorder.start(10000); 
         screenRecorderRef.current = screenRecorder;
       }
 
-      // 2. Request Webcam and Mic Media (if enabled)
+      
       if (Number(controls.webcam) === 1 || Number(controls.mic) === 1) {
         userStream = await navigator.mediaDevices.getUserMedia({
           video: Number(controls.webcam) === 1,
@@ -524,18 +625,18 @@ function TestPage() {
           videoRef.current.srcObject = userStream;
         }
 
-        // Start Local AI Analysis instead of saving heavy .webm files
+        
         startAIProctoring(userStream);
       }
 
-      // 3. Request Fullscreen after all media permissions are successfully granted
+      
       if (Number(controls.fullscreen) === 1) {
         try {
           await document.documentElement.requestFullscreen();
           setIsFullscreen(true);
         } catch (err) {
           console.error("Fullscreen error:", err);
-          // Clean up streams if fullscreen fails
+          
           if (displayStream) displayStream.getTracks().forEach(t => t.stop());
           if (userStream) userStream.getTracks().forEach(t => t.stop());
           setPermissionError("Fullscreen permission is required. Please click anywhere to try again.");
@@ -544,9 +645,17 @@ function TestPage() {
       }
 
       setPermissionsGranted(true);
+      if (isResumed) {
+        addToast("Test resumed", "warning");
+        setTimeout(() => {
+          alert("⚠️ WARNING: You have resumed this assessment.\n\nIf Chrome/Edge exits or closes again without submitting, your assessment will be automatically submitted and you will NOT be allowed to resume a second time.");
+        }, 100);
+      } else {
+        addToast("Profile updated", "success");
+      }
     } catch (err) {
       console.error(err);
-      // Clean up streams on error
+      
       if (displayStream) displayStream.getTracks().forEach(t => t.stop());
       if (userStream) userStream.getTracks().forEach(t => t.stop());
 
@@ -560,7 +669,7 @@ function TestPage() {
     }
   };
 
-  // Global Loading State
+  
   if (!assessment || !controls) {
     return (
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100vh", background: "var(--bg-base)", color: "white" }}>
@@ -584,7 +693,7 @@ function TestPage() {
     return (
       <div className="app-layout" style={{ position: "relative" }}>
         
-        {/* BLURRED BACKGROUND OF THE ACTUAL TEST */}
+        {}
         <div style={{ filter: "blur(8px)", pointerEvents: "none", opacity: 0.6, height: "100vh", overflow: "hidden" }}>
           <nav className="navbar" style={{ height: "74px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}></nav>
           <div className="workspace" style={{ display: "flex", height: "calc(100vh - 74px)" }}>
@@ -593,7 +702,7 @@ function TestPage() {
           </div>
         </div>
 
-        {/* CLICK ANYWHERE OVERLAY */}
+        {}
         <div 
           onClick={startTestSequence}
           style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 9999, background: "rgba(0,0,0,0.3)" }}
@@ -603,10 +712,14 @@ function TestPage() {
                <i className="ri-cursor-fill" style={{ fontSize: "36px", color: "#a78bfa" }}></i>
             </div>
             
-            <h2 style={{ color: "white", fontSize: "28px", marginBottom: "12px", fontWeight: "800", letterSpacing: "0.5px" }}>Click Anywhere To Begin</h2>
-            <p style={{ color: "#94a3b8", fontSize: "15px", maxWidth: "420px", lineHeight: "1.6", margin: "0 auto" }}>
-              The browser will naturally ask for necessary permissions (Camera, Mic, Screen) once you click.
-            </p>
+             <h2 style={{ color: "white", fontSize: "28px", marginBottom: "12px", fontWeight: "800", letterSpacing: "0.5px" }}>
+               {isResumed ? "Click Anywhere to Resume Assessment" : "Click Anywhere To Begin"}
+             </h2>
+             <p style={{ color: "#94a3b8", fontSize: "15px", maxWidth: "420px", lineHeight: "1.6", margin: "0 auto" }}>
+               {isResumed 
+                 ? "Clicking will restore fullscreen and proctoring. Your progress is saved."
+                 : "The browser will naturally ask for necessary permissions (Camera, Mic, Screen) once you click."}
+             </p>
             
             {permissionError && (
               <div style={{ marginTop: "24px", background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#fca5a5", padding: "16px 24px", borderRadius: "14px", fontSize: "14px", fontWeight: "600" }}>
@@ -622,7 +735,7 @@ function TestPage() {
   }
 
 
-  // Fullscreen Enforcer Overlay
+  
   if (permissionsGranted && Number(controls.fullscreen) === 1 && !isFullscreen) {
     return (
       <div 
@@ -659,23 +772,65 @@ function TestPage() {
         </div>
       )}
 
-      {/* ADVANCED TOAST SYSTEM */}
-      <div style={{ position: "fixed", top: "20px", left: "50%", transform: "translateX(-50%)", zIndex: 9999, display: "flex", flexDirection: "column", gap: "10px", pointerEvents: "none" }}>
-        {toasts.map(t => (
-          <div key={t.id} style={{ 
-            backgroundColor: t.type === "error" ? "#ef4444" : t.type === "warning" ? "#eab308" : t.type === "success" ? "#22c55e" : "#3b82f6", 
-            color: t.type === "warning" ? "#000" : "white", 
-            padding: "14px 28px", borderRadius: "14px", fontWeight: "700", boxShadow: "0 10px 25px rgba(0,0,0,0.4)", 
-            display: "flex", alignItems: "center", gap: "10px", fontSize: "15px", pointerEvents: "none",
-            animation: "slideUpFade 0.3s ease-out forwards"
-          }}>
-            <i className={t.type === "error" ? "ri-error-warning-fill" : t.type === "success" ? "ri-checkbox-circle-fill" : "ri-information-fill"} style={{ fontSize: "20px" }}></i>
-            {t.message}
-          </div>
-        ))}
+      {}
+      <div style={{ position: "fixed", top: "24px", right: "100px", zIndex: 9999, display: "flex", flexDirection: "column", gap: "8px", pointerEvents: "none" }}>
+        {toasts.map(t => {
+          const isError = t.type === "error";
+          const isWarning = t.type === "warning";
+          const isSuccess = t.type === "success";
+          
+          const bg = isError 
+            ? "#991b1b" 
+            : isWarning 
+              ? "#854d0e" 
+              : isSuccess 
+                ? "#166534" 
+                : "#1e40af";
+
+          return (
+            <div key={t.id} style={{ 
+              backgroundColor: bg,
+              color: "white",
+              padding: "10px 18px", 
+              borderRadius: "10px", 
+              fontWeight: "600", 
+              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.35)", 
+              display: "flex", 
+              alignItems: "center", 
+              gap: "8px", 
+              fontSize: "13px", 
+              pointerEvents: "auto",
+              animation: "slideUpFade 0.3s ease-out forwards"
+            }}>
+              <i className={isError ? "ri-error-warning-fill" : isSuccess ? "ri-checkbox-circle-fill" : isWarning ? "ri-alert-fill" : "ri-information-fill"} style={{ fontSize: "16px", color: "white" }}></i>
+              <span>{t.message}</span>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setToasts(prev => prev.filter(toast => toast.id !== t.id));
+                }}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "rgba(255, 255, 255, 0.8)",
+                  cursor: "pointer",
+                  fontSize: "15px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "0",
+                  marginLeft: "10px",
+                  transition: "color 0.2s"
+                }}
+              >
+                <i className="ri-close-line"></i>
+              </button>
+            </div>
+          );
+        })}
       </div>
 
-      {/* WEBCAM PREVIEW */}
+      {}
       <video 
          ref={videoRef}
          autoPlay 
@@ -697,9 +852,48 @@ function TestPage() {
          }}
       />
 
-      {/* NAVBAR WITH PILLS */}
+      {}
       <nav className="navbar">
         <div className="nav-left">
+          <div className="logo-container">
+            <div className="logo-glow-dot"></div>
+            <div>
+              <div className="logo-title-text">Aethon</div>
+              <div className="logo-subtitle-text">Professional Assessment Platform</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="nav-center">
+          {timeLeftStr && (
+            <div className={`timer-pill ${isUrgent ? "urgent" : ""}`} title="Remaining Time">
+              <i className="ri-time-line"></i>
+              <span>{timeLeftStr.replace(/:/g, " : ")}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="nav-right" style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+          {Number(controls?.tab_switch) === 1 && tabRemaining !== null && (
+            <div 
+              className={`warning-pill ${tabRemaining <= 1 ? "critical" : tabRemaining <= 2 ? "warning" : ""}`}
+              title="Remaining tab switches before automatic submission"
+            >
+              <i className="ri-window-line"></i>
+              <span>Tab Warnings: {tabRemaining}</span>
+            </div>
+          )}
+
+          {Number(controls?.hover_detection) === 1 && hoverRemaining !== null && (
+            <div 
+              className={`warning-pill ${hoverRemaining <= 1 ? "critical" : hoverRemaining <= 2 ? "warning" : ""}`}
+              title="Remaining hover out warnings before automatic submission"
+            >
+              <i className="ri-scan-focus-line"></i>
+              <span>Hover Warnings: {hoverRemaining}</span>
+            </div>
+          )}
+
           <button 
             className="nav-exit" 
             onClick={() => {
@@ -707,77 +901,9 @@ function TestPage() {
                 submitAssessment("Manual Exit");
               }
             }}
+            style={{ marginLeft: "12px", border: "1px solid var(--border-color)", padding: "6px 14px", borderRadius: "12px", background: "rgba(255,255,255,0.02)" }}
           >
-            <i className="ri-arrow-left-line"></i> Exit Assessment
-          </button>
-          <div style={{ width: "1px", height: "16px", backgroundColor: "var(--border-color)" }}></div>
-          <span className="nav-badge-slot">SYS-301</span>
-          <span className="nav-title">{assessment ? assessment.title : "Exam Assessment"}</span>
-          <div style={{ width: "1px", height: "16px", backgroundColor: "var(--border-color)" }}></div>
-          <div className="nav-autosave-dot"></div>
-          <span className="nav-autosave-text">Auto Saved</span>
-        </div>
-
-        <div className="nav-center" style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-          {timeLeftStr && (
-            <div className={`timer-pill ${isUrgent ? "urgent" : ""}`} title="Remaining Time">
-              <i className="ri-timer-line" style={{ fontSize: "15px" }}></i>
-              <span>{timeLeftStr} Remaining</span>
-            </div>
-          )}
-
-          {Number(controls?.tab_switch) === 1 && tabRemaining !== null && (
-            <div 
-              className="warning-pill" 
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                background: tabRemaining <= 1 ? "rgba(239, 68, 68, 0.08)" : "rgba(245, 158, 11, 0.08)",
-                borderColor: tabRemaining <= 1 ? "rgba(239, 68, 68, 0.45)" : "rgba(245, 158, 11, 0.45)",
-                borderRadius: "99px",
-                border: "1px solid",
-                padding: "6px 16px",
-                color: tabRemaining <= 1 ? "#fca5a5" : "var(--yellow)",
-                fontWeight: "700",
-                fontSize: "13px",
-                letterSpacing: "0.5px"
-              }}
-              title="Remaining tab switches before automatic submission"
-            >
-              <i className="ri-window-line" style={{ fontSize: "15px" }}></i>
-              <span>Tab Warnings: {tabRemaining}</span>
-            </div>
-          )}
-
-          {Number(controls?.hover_detection) === 1 && hoverRemaining !== null && (
-            <div 
-              className="warning-pill" 
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                background: hoverRemaining <= 1 ? "rgba(239, 68, 68, 0.08)" : "rgba(245, 158, 11, 0.08)",
-                borderColor: hoverRemaining <= 1 ? "rgba(239, 68, 68, 0.45)" : "rgba(245, 158, 11, 0.45)",
-                borderRadius: "99px",
-                border: "1px solid",
-                padding: "6px 16px",
-                color: hoverRemaining <= 1 ? "#fca5a5" : "var(--yellow)",
-                fontWeight: "700",
-                fontSize: "13px",
-                letterSpacing: "0.5px"
-              }}
-              title="Remaining hover out warnings before automatic submission"
-            >
-              <i className="ri-scan-focus-line" style={{ fontSize: "15px" }}></i>
-              <span>Hover Warnings: {hoverRemaining}</span>
-            </div>
-          )}
-        </div>
-
-        <div className="nav-right" style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-          <button className="nav-btn-preview">
-            Preview
+            Exit
           </button>
 
           <button 
@@ -787,44 +913,15 @@ function TestPage() {
               }
             }} 
             className="nav-btn-submit"
+            style={{ height: "36px", borderRadius: "12px" }}
           >
-            <i className="ri-checkbox-circle-line"></i> Submit Assessment
+            Submit
           </button>
         </div>
       </nav>
 
       <div className="workspace">
-        {/* LEFT COLUMN: Problem Details */}
-        <main className="center-panel">
-          <ContentPanel question={selected} />
-        </main>
-
-        {/* MIDDLE COLUMN: Code Editor OR MCQ Option Cards */}
-        <section className="right-panel">
-          {selected?.question_type === "coding" ? (
-            <CodingPanel 
-              ref={codingPanelRef}
-              question={selected} 
-              answers={answers} 
-              setAnswers={setAnswers} 
-              onSubmit={() => submitAssessment()}
-              addToast={addToast}
-              hasRun={!!hasRunCodeMap[selected?.id]}
-              onRunCode={() => setHasRunCodeMap(prev => ({ ...prev, [selected.id]: true }))}
-              onSubmitQuestion={() => {
-                setSubmittedCodingQuestions(prev => [...prev, selected.id]);
-              }}
-            />
-          ) : (
-            <MCQView
-              question={selected}
-              answers={answers}
-              setAnswers={setAnswers}
-            />
-          )}
-        </section>
-
-        {/* RIGHT COLUMN: Question Navigation & Overview */}
+        {}
         <aside className="sidebar">
           <Sidebar
             questions={questions}
@@ -835,39 +932,116 @@ function TestPage() {
             toggleFlagQuestion={toggleFlagQuestion}
             clearAnswer={clearAnswer}
             submittedCodingQuestions={submittedCodingQuestions}
+            assessment={assessment}
           />
         </aside>
 
-        {/* BOTTOM PAGINATION BAR SPANNING LEFT PANEL */}
-        {questions.length > 0 && selected && (
-          <div className="footer-nav-bar">
-            <button
-              className="footer-nav-btn"
-              disabled={questions.findIndex(q => q.id === selected.id) === 0}
-              onClick={() => {
-                const idx = questions.findIndex(q => q.id === selected.id);
-                if (idx > 0) setSelected(questions[idx - 1]);
-              }}
-            >
-              <i className="ri-arrow-left-s-line"></i> Previous
-            </button>
-            
-            <div className="footer-nav-counter">
-              Question {questions.findIndex(q => q.id === selected.id) + 1} of {questions.length}
-            </div>
+        {}
+        <main className="main-content" style={{ position: "relative" }}>
+          {selected?.question_type === "mcq" ? (
+            <div className="mcq-view-container">
+              {}
+              <div className="question-category">
+                {assessment ? assessment.title : "PROGRAMMING FUNDAMENTALS"}
+              </div>
+              
+              {}
+              <div className="question-header">
+                <h1 className="question-title">
+                  Question {questions.findIndex(q => q.id === selected.id) + 1 < 10 
+                    ? `0${questions.findIndex(q => q.id === selected.id) + 1}` 
+                    : questions.findIndex(q => q.id === selected.id) + 1}
+                </h1>
+                <span className="marks-badge">+{selected.marks || 2} Marks</span>
+              </div>
+              
+              <div className="question-divider"></div>
 
-            <button
-              className="footer-nav-btn"
-              disabled={questions.findIndex(q => q.id === selected.id) === questions.length - 1}
-              onClick={() => {
-                const idx = questions.findIndex(q => q.id === selected.id);
-                if (idx < questions.length - 1) setSelected(questions[idx + 1]);
-              }}
-            >
-              Next <i className="ri-arrow-right-s-line"></i>
-            </button>
-          </div>
-        )}
+              {}
+              <div className="question-body">
+                {selected.question_text}
+              </div>
+
+              {}
+              <MCQView
+                question={selected}
+                answers={answers}
+                setAnswers={setAnswers}
+                addToast={addToast}
+              />
+            </div>
+          ) : (
+            <div className="coding-split-container">
+              <div className="coding-desc-panel">
+                <ContentPanel 
+                  question={selected} 
+                  hideTitle={false} 
+                  terminalLogs={terminalLogs}
+                  executionStats={executionStats}
+                  isRunningTests={isRunningTests}
+                  isSubmittingQuestion={isSubmittingQuestion}
+                  hasRun={!!hasRunCodeMap[selected?.id]}
+                />
+              </div>
+              <div className="coding-editor-panel">
+                <CodingPanel 
+                  ref={codingPanelRef}
+                  question={selected} 
+                  answers={answers} 
+                  setAnswers={setAnswers} 
+                  onSubmit={() => submitAssessment()}
+                  addToast={addToast}
+                  hasRun={!!hasRunCodeMap[selected?.id]}
+                  onRunCode={() => setHasRunCodeMap(prev => ({ ...prev, [selected.id]: true }))}
+                   onSubmitQuestion={(code, lang) => {
+                     if (!submittedCodingQuestions.includes(selected.id)) {
+                       setSubmittedCodingQuestions(prev => [...prev, selected.id]);
+                     }
+                   }}
+                  terminalLogs={terminalLogs}
+                  setTerminalLogs={setTerminalLogs}
+                  executionStats={executionStats}
+                  setExecutionStats={setExecutionStats}
+                  isRunningTests={isRunningTests}
+                  setIsRunningTests={setIsRunningTests}
+                  isSubmittingQuestion={isSubmittingQuestion}
+                  setIsSubmittingQuestion={setIsSubmittingQuestion}
+                />
+              </div>
+            </div>
+          )}
+
+          {}
+          {questions.length > 0 && selected && selected.question_type === "mcq" && (
+            <div className="footer-nav-bar" style={{ width: "calc(100% - 120px)", left: "60px" }}>
+              <button
+                className="footer-nav-btn"
+                disabled={questions.findIndex(q => q.id === selected.id) === 0}
+                onClick={() => {
+                  const idx = questions.findIndex(q => q.id === selected.id);
+                  if (idx > 0) setSelected(questions[idx - 1]);
+                }}
+              >
+                <i className="ri-arrow-left-s-line"></i> Previous
+              </button>
+              
+              <div className="footer-nav-counter">
+                Question {questions.findIndex(q => q.id === selected.id) + 1} of {questions.length}
+              </div>
+
+              <button
+                className="footer-nav-btn"
+                disabled={questions.findIndex(q => q.id === selected.id) === questions.length - 1}
+                onClick={() => {
+                  const idx = questions.findIndex(q => q.id === selected.id);
+                  if (idx < questions.length - 1) setSelected(questions[idx + 1]);
+                }}
+              >
+                Next <i className="ri-arrow-right-s-line"></i>
+              </button>
+            </div>
+          )}
+        </main>
       </div>
     </div>
   );

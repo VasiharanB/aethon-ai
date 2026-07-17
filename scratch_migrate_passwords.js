@@ -5,7 +5,7 @@ const migrateTable = async (tableName) => {
   return new Promise((resolve, reject) => {
     db.query(`SELECT id, password FROM ${tableName}`, async (err, results) => {
       if (err) {
-        // Table might not exist, just resolve
+        
         if (err.code === 'ER_NO_SUCH_TABLE') {
           console.log(`Table ${tableName} does not exist, skipping...`);
           return resolve();
@@ -14,7 +14,7 @@ const migrateTable = async (tableName) => {
       }
 
       for (const row of results) {
-        // Skip already hashed passwords (bcrypt hashes start with $2b$ or $2a$)
+        
         if (row.password.startsWith("$2b$") || row.password.startsWith("$2a$")) {
           continue;
         }
