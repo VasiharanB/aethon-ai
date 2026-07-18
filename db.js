@@ -6,9 +6,10 @@ const db = mysql.createPool({
   user: process.env.DB_USER || "root",
   password: process.env.DB_PASSWORD || "",
   database: process.env.DB_NAME || "portfolio",
-  ssl: process.env.DB_HOST && process.env.DB_HOST.includes("planetscale") 
-        ? { rejectUnauthorized: true } 
-        : false,
+  ssl:
+    process.env.NODE_ENV === "production"
+      ? { rejectUnauthorized: true }
+      : undefined,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
