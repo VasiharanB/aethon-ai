@@ -62,6 +62,7 @@ db.query(`
     console.log("student_answers table verified/created.");
     
     
+    if (process.env.NODE_ENV !== "production") {
     console.log("Running automatic database updates on startup for assessment 60...");
     db.query(`
       UPDATE assessments 
@@ -94,10 +95,12 @@ db.query(`
       if (errReset) console.error("Error resetting assigned_students status:", errReset);
       else console.log("Reset submission status for shameem123@gmail.com successfully.");
     });
+    }
   }
 });
 
 
+if (process.env.NODE_ENV !== "production") {
 const bcrypt = require("bcrypt");
 bcrypt.hash("admin123", 10).then((hashed) => {
   
@@ -116,5 +119,6 @@ bcrypt.hash("admin123", 10).then((hashed) => {
     else console.log("Cleaned up any admin emails from users table");
   });
 });
+}
 
 module.exports = db;
