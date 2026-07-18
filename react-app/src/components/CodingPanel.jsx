@@ -1,5 +1,6 @@
 import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import Editor from "@monaco-editor/react";
+import API_URL from "../config/api";
 
 const parseTestCase = (str) => {
   if (!str) return { input: "N/A", output: "N/A" };
@@ -71,7 +72,7 @@ const CodingPanel = forwardRef(({
     const isPractice = window.location.pathname.includes("/practice/");
 
     try {
-      const res = await fetch("http://localhost:3000/run-code", {
+      const res = await fetch(`${API_URL}/run-code`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -118,7 +119,7 @@ const CodingPanel = forwardRef(({
 
     if (isPractice) {
       try {
-        const res = await fetch("http://localhost:3000/run-code", {
+        const res = await fetch(`${API_URL}/run-code`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -153,7 +154,7 @@ const CodingPanel = forwardRef(({
     }
 
     try {
-      const res = await fetch("http://localhost:3000/save-coding-answer", {
+      const res = await fetch(`${API_URL}/save-coding-answer`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import ContentPanel from "../components/ContentPanel";
 import CodingPanel from "../components/CodingPanel";
 import "./test.css";
+import API_URL from "../config/api";
 
 function PracticePage() {
   const { id } = useParams();
@@ -40,7 +41,7 @@ function PracticePage() {
   useEffect(() => {
     const cachedName = localStorage.getItem("userName");
     if (!cachedName && userEmail && userEmail !== "guest@student.com") {
-      fetch(`http://localhost:3000/student/profile?email=${encodeURIComponent(userEmail)}`)
+      fetch(`${API_URL}/student/profile?email=${encodeURIComponent(userEmail)}`)
         .then(res => res.json())
         .then(data => {
           if (data.name) {
@@ -52,7 +53,7 @@ function PracticePage() {
   }, [userEmail]);
 
   useEffect(() => {
-    fetch(`http://localhost:3000/practice-full/${id}`)
+    fetch(`${API_URL}/practice-full/${id}`)
       .then(res => res.json())
       .then(data => {
         if (!data.error) {
@@ -72,7 +73,7 @@ function PracticePage() {
 
   const submitPractice = async () => {
     try {
-      await fetch("http://localhost:3000/submit-practice", {
+      await fetch(`${API_URL}/submit-practice`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

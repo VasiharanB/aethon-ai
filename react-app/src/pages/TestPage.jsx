@@ -7,6 +7,7 @@ import CodingPanel from "../components/CodingPanel";
 import MCQView from "../components/MCQView";
 
 import "./test.css";
+import API_URL from "../config/api";
 
 function TestPage() {
   const { id } = useParams();
@@ -83,7 +84,7 @@ function TestPage() {
     const isAutoSubmitted = reason && reason !== "Manual Submission" && reason !== "Manual Exit" ? 1 : 0;
 
     try {
-      await fetch("http://localhost:3000/submit-assessment", {
+      await fetch(`${API_URL}/submit-assessment`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -102,7 +103,7 @@ function TestPage() {
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(() => {});
     }
-    window.location.href = `http://localhost:3000/submitted.html?id=${id}`;
+    window.location.href = `${API_URL}/submitted.html?id=${id}`;
   };
 
   const [permissionsGranted, setPermissionsGranted] = useState(false);
@@ -260,7 +261,7 @@ function TestPage() {
                 
                 
                 const snapshot = canvas.toDataURL("image/jpeg", 0.7);
-                fetch("http://localhost:3000/proctor/log", {
+                fetch(`${API_URL}/proctor/log`, {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
@@ -295,7 +296,7 @@ function TestPage() {
   useEffect(() => {
     const cachedName = localStorage.getItem("userName");
     if (!cachedName && userEmail && userEmail !== "unknown@student.com" && userEmail !== "guest@student.com") {
-      fetch(`http://localhost:3000/student/profile?email=${encodeURIComponent(userEmail)}`)
+      fetch(`${API_URL}/student/profile?email=${encodeURIComponent(userEmail)}`)
         .then(res => res.json())
         .then(data => {
           if (data.name) {
@@ -307,7 +308,7 @@ function TestPage() {
   }, [userEmail]);
 
   useEffect(() => {
-    fetch(`http://localhost:3000/assessment-full/${id}`)
+    fetch(`${API_URL}/assessment-full/${id}`)
       .then((res) => res.json())
       .then((data) => {
         setAssessment(data.assessment || null);
@@ -328,7 +329,7 @@ function TestPage() {
         }
 
         // Hydrate saved answers
-        return fetch(`http://localhost:3000/assessment-answers/${id}/${userEmail}`);
+        return fetch(`${API_URL}/assessment-answers/${id}/${userEmail}`);
       })
       .then((res) => {
         if (res) return res.json();
@@ -358,7 +359,7 @@ function TestPage() {
   };
 
   const sendLog = (logType) => {
-    fetch("http://localhost:3000/proctor/log", {
+    fetch(`${API_URL}/proctor/log`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -376,7 +377,7 @@ function TestPage() {
     formData.append("log_type", type);
     formData.append("video", blob, "recording.webm");
 
-    return fetch("http://localhost:3000/proctor/upload", {
+    return fetch(`${API_URL}/proctor/upload`, {
       method: "POST",
       body: formData
     }).catch(console.error);

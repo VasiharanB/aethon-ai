@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import Editor from "@monaco-editor/react";
+import API_URL from "./config/api";
 
 function CodingPage() {
   const { id } = useParams();
@@ -14,7 +15,7 @@ function CodingPage() {
 
   
 useEffect(() => {
-  fetch(`http://localhost:3000/assessment-full/${id}`)
+  fetch(`${API_URL}/assessment-full/${id}`)
     .then(res => res.json())
     .then(data => {
 
