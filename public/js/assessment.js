@@ -369,7 +369,7 @@ async function startTest(id, type = 'test') {
   const currentName = localStorage.getItem("userName") || "Student";
 
   if (type === 'practice') {
-    window.location.href = `http://localhost:5173/practice/${id}?email=${encodeURIComponent(currentEmail)}&name=${encodeURIComponent(currentName)}`;
+    window.location.href = `https://aethon-ai-six.vercel.app/practice/${id}?email=${encodeURIComponent(currentEmail)}&name=${encodeURIComponent(currentName)}`;
     return;
   }
 
@@ -383,7 +383,7 @@ async function startTest(id, type = 'test') {
       });
       const resumeData = await resumeRes.json();
       if (resumeData.success) {
-        window.location.href = `http://localhost:5173/test/${id}?email=${encodeURIComponent(currentEmail)}&name=${encodeURIComponent(currentName)}&resumed=true`;
+        window.location.href = `https://aethon-ai-six.vercel.app/test/${id}?email=${encodeURIComponent(currentEmail)}&name=${encodeURIComponent(currentName)}&resumed=true`;
       } else {
         alert(resumeData.error || "You have already resumed once. You cannot resume again.");
         window.location.href = "submitted.html?id=" + id;

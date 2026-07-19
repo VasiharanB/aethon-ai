@@ -115,7 +115,7 @@ document.getElementById("startBtn").onclick = async function () {
         alert("Failed to start assessment. Please try again.");
         return;
       }
-      window.location.href = `http://localhost:5173/test/${id}?email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`;
+      window.location.href = `https://aethon-ai-six.vercel.app/test/${id}?email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`;
     } else {
       // Resume assessment attempt
       const resumeRes = await fetch("/resume-assessment", {
@@ -125,7 +125,7 @@ document.getElementById("startBtn").onclick = async function () {
       });
       const resumeData = await resumeRes.json();
       if (resumeData.success) {
-        window.location.href = `http://localhost:5173/test/${id}?email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}&resumed=true`;
+        window.location.href = `https://aethon-ai-six.vercel.app/test/${id}?email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}&resumed=true`;
       } else {
         alert(resumeData.error || "You have already resumed once. You cannot resume again.");
         window.location.href = "submitted.html?id=" + id;
@@ -134,7 +134,7 @@ document.getElementById("startBtn").onclick = async function () {
   } catch (err) {
     console.error("Error initiating assessment:", err);
     // fallback
-    window.location.href = `http://localhost:5173/test/${id}?email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`;
+    window.location.href = `https://aethon-ai-six.vercel.app/test/${id}?email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`;
   }
 };
 

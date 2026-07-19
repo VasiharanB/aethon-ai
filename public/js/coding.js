@@ -369,7 +369,7 @@ function startTest(id, type = 'test') {
     
     const iframe = document.createElement("iframe");
     iframe.id = "practiceIframe";
-    iframe.src = `http://localhost:5173/practice/${id}?email=${encodeURIComponent(currentEmail)}`;
+    iframe.src = `https://aethon-ai-six.vercel.app/practice/${id}?email=${encodeURIComponent(currentEmail)}`;
     iframe.style.width = "100%";
     iframe.style.height = "100vh";
     iframe.style.border = "none";
