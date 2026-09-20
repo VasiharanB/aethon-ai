@@ -49,6 +49,10 @@ The platform also provides recruiters and administrators with tools to create, m
 - Performance insights
 - Personalized learning path
 
+### 🛡️ Assessment Monitoring
+
+The repository also contains assessment-monitoring / proctoring flows, including browser-side monitoring interfaces and server endpoints for receiving proctoring logs and uploaded assessment video data.
+
 ---
 
 ## 🏗️ Tech Stack
@@ -122,7 +126,7 @@ Mohammed Shameem S
 
 Software Developer | AI Enthusiast
 
-## 🫱🏽‍🫲🏽 Contributers
+## 🫱🏽‍🫲🏽 Contributors
 
 Sivaram S & Vasiharan B
 
